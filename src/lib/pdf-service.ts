@@ -203,7 +203,7 @@ class PDFService {
     yPosition = this.addSignatureSection(yPosition, 'Tanda Tangan')
     
     // Save the PDF
-    this.doc.save(`spk-${assignment.id}.pdf`)
+    this.doc.save(`surat-tugas-${assignment.id}.pdf`)
   }
 
   async generateCompletionReport(assignment: AssignmentData): Promise<void> {
@@ -255,26 +255,40 @@ class PDFService {
   }
 
   async generatePaymentReceipt(assignment: AssignmentData, costBreakdown: CostBreakdown): Promise<void> {
-    this.addHeader('KWITANSI PEMBAYARAN')
+    this.addHeader('TAGIHAN PEMBAYARAN TEKNISI')
     
     let yPosition = 80
     
     // Receipt Details
-    yPosition = this.addSection('Detail Kwitansi', yPosition)
-    yPosition = this.addText('Nomor Kwitansi', assignment.id, yPosition)
+    yPosition = this.addSection('Detail Tagihan', yPosition)
+    yPosition = this.addText('Nomor Tagihan', assignment.id, yPosition)
     yPosition = this.addText('Nomor Penugasan', assignment.id, yPosition)
-    yPosition = this.addText('Tanggal Pembayaran', new Date().toLocaleDateString('id-ID'), yPosition)
+    yPosition = this.addText('Tanggal Tagihan', new Date().toLocaleDateString('id-ID'), yPosition)
     
-    // Technician Information
+    // Company Information (Pihak yang membayar)
+    yPosition += 10
+    yPosition = this.addSection('Diterbitkan Oleh', yPosition)
+    yPosition = this.addText('Perusahaan', 'Clasnet Group', yPosition)
+    yPosition = this.addText('Alamat', 'Jl. Serulingmas No. 32, Banjarnegara, Indonesia', yPosition)
+    yPosition = this.addText('Telepon', '+62 286 123456', yPosition)
+    
+    // Technician Information (Pihak yang menerima pembayaran)
     yPosition += 10
     yPosition = this.addSection('Dibayarkan Kepada', yPosition)
     yPosition = this.addText('Nama Teknisi', assignment.leadTechnician.name, yPosition)
     yPosition = this.addText('Telepon', assignment.leadTechnician.phone, yPosition)
     yPosition = this.addText('Alamat', assignment.leadTechnician.address, yPosition)
     
+    // Assignment Information
+    yPosition += 10
+    yPosition = this.addSection('Informasi Penugasan', yPosition)
+    yPosition = this.addText('Klien', assignment.client.name, yPosition)
+    yPosition = this.addText('Jenis Layanan', assignment.serviceType.name, yPosition)
+    yPosition = this.addText('Periode', `${this.formatDate(assignment.startDate)} - ${this.formatDate(assignment.endDate)}`, yPosition)
+    
     // Cost Breakdown
     yPosition += 10
-    yPosition = this.addSection('Rincian Pembayaran', yPosition)
+    yPosition = this.addSection('Rincian Tagihan', yPosition)
     
     const headers = ['Deskripsi', 'Jumlah (IDR)']
     const data = [
@@ -282,7 +296,7 @@ class PDFService {
       ['Biaya Transport', this.formatRupiah(costBreakdown.transportCost)],
       ['Akomodasi', this.formatRupiah(costBreakdown.accommodation)],
       ['Biaya Peralatan Insidental', this.formatRupiah(costBreakdown.incidentalEquipmentCost)],
-      ['TOTAL', this.formatRupiah(costBreakdown.total)]
+      ['TOTAL TAGIHAN', this.formatRupiah(costBreakdown.total)]
     ]
     yPosition = this.addTable(headers, data, yPosition)
     
@@ -291,6 +305,7 @@ class PDFService {
     yPosition = this.addSection('Konfirmasi Pembayaran', yPosition)
     yPosition = this.addText('Status Pembayaran', 'LUNAS', yPosition)
     yPosition = this.addText('Metode Pembayaran', 'Transfer Bank', yPosition)
+    yPosition = this.addText('Tanggal Pembayaran', new Date().toLocaleDateString('id-ID'), yPosition)
     
     // Notes
     if (assignment.notes) {
@@ -305,7 +320,7 @@ class PDFService {
     yPosition = this.addSignatureSection(yPosition + 40, 'Diterima Oleh (Teknisi)')
     
     // Save the PDF
-    this.doc.save(`kwitansi-${assignment.id}.pdf`)
+    this.doc.save(`tagihan-${assignment.id}.pdf`)
   }
 
   async generateFromHTML(elementId: string, filename: string): Promise<void> {

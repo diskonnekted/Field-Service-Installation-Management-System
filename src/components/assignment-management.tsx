@@ -208,18 +208,61 @@ export default function AssignmentManagement() {
     setEditingAssignment(null)
   }
 
-  const handleDownloadPDF = async (assignmentId: string, type: 'work-order' | 'completion-report' | 'payment-receipt') => {
+  const handleDownloadPDF = async (assignmentId: string, type: 'work-order' | 'completion-report' | 'payment-receipt', event?: React.MouseEvent<HTMLButtonElement>) => {
     try {
+      // Show loading state
+      const button = event?.currentTarget as HTMLButtonElement
+      if (button) {
+        button.disabled = true
+        const originalText = button.textContent || ''
+        button.innerHTML = '<span class="animate-spin">⏳</span> Mengunduh...'
+        
+        // Store original text
+        button.setAttribute('data-original-text', originalText)
+      }
+
       const response = await fetch(`/api/assignments/${assignmentId}/pdf?type=${type}`)
+      
       if (response.ok) {
-        // The PDF is automatically downloaded by the browser
         const result = await response.json()
         console.log('PDF generated:', result)
+        
+        // Show success message
+        if (button) {
+          button.innerHTML = '✅ Berhasil'
+          setTimeout(() => {
+            button.disabled = false
+            const originalText = button.getAttribute('data-original-text')
+            button.innerHTML = originalText || 'Download'
+          }, 2000)
+        }
       } else {
-        console.error('Failed to generate PDF')
+        const errorData = await response.json()
+        console.error('Failed to generate PDF:', errorData)
+        
+        // Show error message
+        if (button) {
+          button.innerHTML = '❌ Gagal'
+          setTimeout(() => {
+            button.disabled = false
+            const originalText = button.getAttribute('data-original-text')
+            button.innerHTML = originalText || 'Download'
+          }, 2000)
+        }
       }
     } catch (error) {
       console.error('Error generating PDF:', error)
+      
+      // Show error message
+      const button = event?.currentTarget as HTMLButtonElement
+      if (button) {
+        button.innerHTML = '❌ Error'
+        setTimeout(() => {
+          button.disabled = false
+          const originalText = button.getAttribute('data-original-text')
+          button.innerHTML = originalText || 'Download'
+        }, 2000)
+      }
     }
   }
 
@@ -503,32 +546,39 @@ export default function AssignmentManagement() {
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button variant="outline" size="sm">
-                        <Eye className="h-3 w-3" />
+                        <Eye className="h-3 w-3 mr-1" />
+                        Lihat
                       </Button>
                       <div className="flex space-x-1">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => handleDownloadPDF(assignment.id, 'work-order')}
-                          title="Download Work Order"
+                          onClick={(e) => handleDownloadPDF(assignment.id, 'work-order', e)}
+                          title="Download Surat Tugas"
+                          data-original-text="Surat Tugas"
                         >
-                          <FileText className="h-3 w-3" />
+                          <FileText className="h-3 w-3 mr-1" />
+                          Surat Tugas
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => handleDownloadPDF(assignment.id, 'completion-report')}
-                          title="Download Completion Report"
+                          onClick={(e) => handleDownloadPDF(assignment.id, 'completion-report', e)}
+                          title="Download Berita Acara"
+                          data-original-text="Berita Acara"
                         >
-                          <FileText className="h-3 w-3" />
+                          <FileText className="h-3 w-3 mr-1" />
+                          Berita Acara
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => handleDownloadPDF(assignment.id, 'payment-receipt')}
-                          title="Download Payment Receipt"
+                          onClick={(e) => handleDownloadPDF(assignment.id, 'payment-receipt', e)}
+                          title="Download Tagihan"
+                          data-original-text="Tagihan"
                         >
-                          <FileText className="h-3 w-3" />
+                          <FileText className="h-3 w-3 mr-1" />
+                          Tagihan
                         </Button>
                       </div>
                     </div>
