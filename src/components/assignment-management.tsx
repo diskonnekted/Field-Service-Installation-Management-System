@@ -221,11 +221,22 @@ export default function AssignmentManagement() {
         button.setAttribute('data-original-text', originalText)
       }
 
+      // Create download link
       const response = await fetch(`/api/assignments/${assignmentId}/pdf?type=${type}`)
       
       if (response.ok) {
-        const result = await response.json()
-        console.log('PDF generated:', result)
+        // Get blob from response
+        const blob = await response.blob()
+        
+        // Create download link
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = getFilename(type, assignmentId)
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
         
         // Show success message
         if (button) {
@@ -263,6 +274,19 @@ export default function AssignmentManagement() {
           button.innerHTML = originalText || 'Download'
         }, 2000)
       }
+    }
+  }
+
+  const getFilename = (type: string, assignmentId: string): string => {
+    switch (type) {
+      case 'work-order':
+        return `surat-tugas-${assignmentId}.pdf`
+      case 'completion-report':
+        return `berita-acara-${assignmentId}.pdf`
+      case 'payment-receipt':
+        return `tagihan-${assignmentId}.pdf`
+      default:
+        return `document-${assignmentId}.pdf`
     }
   }
 
