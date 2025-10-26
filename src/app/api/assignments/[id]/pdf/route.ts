@@ -62,12 +62,17 @@ export async function GET(
     }
 
     // Generate PDF based on type
+    let pdfBuffer: Uint8Array
+    let filename: string
+
     switch (type) {
       case 'work-order':
-        await pdfService.generateWorkOrder(assignmentData)
+        pdfBuffer = await pdfService.generateWorkOrderBuffer(assignmentData)
+        filename = `surat-tugas-${assignment.id}.pdf`
         break
       case 'completion-report':
-        await pdfService.generateCompletionReport(assignmentData)
+        pdfBuffer = await pdfService.generateCompletionReportBuffer(assignmentData)
+        filename = `berita-acara-${assignment.id}.pdf`
         break
       case 'payment-receipt':
         // For payment receipt, we need cost breakdown
@@ -78,11 +83,22 @@ export async function GET(
           incidentalEquipmentCost: assignment.totalCost * 0.05,
           total: assignment.totalCost
         }
-        await pdfService.generatePaymentReceipt(assignmentData, costBreakdown)
+        pdfBuffer = await pdfService.generatePaymentReceiptBuffer(assignmentData, costBreakdown)
+        filename = `tagihan-${assignment.id}.pdf`
         break
+      default:
+        throw new Error('Invalid PDF type')
     }
 
-    return NextResponse.json({ success: true, message: 'PDF generated successfully' })
+    // Return PDF as downloadable file
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': pdfBuffer.length.toString(),
+      },
+    })
+
   } catch (error) {
     console.error('Error generating PDF:', error)
     return NextResponse.json(

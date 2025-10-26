@@ -206,6 +206,67 @@ class PDFService {
     this.doc.save(`surat-tugas-${assignment.id}.pdf`)
   }
 
+  async generateWorkOrderBuffer(assignment: AssignmentData): Promise<Uint8Array> {
+    this.addHeader('SURAT PERINTAH KERJA (SPK)')
+    
+    let yPosition = 80
+    
+    // Assignment Details
+    yPosition = this.addSection('Detail Penugasan', yPosition)
+    yPosition = this.addText('Nomor SPK', assignment.id, yPosition)
+    yPosition = this.addText('Nama Klien', assignment.client.name, yPosition)
+    yPosition = this.addText('Jenis Layanan', assignment.serviceType.name, yPosition)
+    yPosition = this.addText('Tanggal Mulai', this.formatDate(assignment.startDate), yPosition)
+    yPosition = this.addText('Tanggal Selesai', this.formatDate(assignment.endDate), yPosition)
+    yPosition = this.addText('Status', this.getStatusText(assignment.status), yPosition)
+    
+    // Client Information
+    yPosition += 10
+    yPosition = this.addSection('Informasi Klien', yPosition)
+    yPosition = this.addText('Perusahaan', assignment.client.name, yPosition)
+    yPosition = this.addText('Kontak Person', assignment.client.contactPerson || '-', yPosition)
+    yPosition = this.addText('Telepon', assignment.client.phone, yPosition)
+    yPosition = this.addText('Alamat', assignment.client.address, yPosition)
+    
+    // Technician Information
+    yPosition += 10
+    yPosition = this.addSection('Informasi Teknisi', yPosition)
+    yPosition = this.addText('Teknisi Utama (PIC)', assignment.leadTechnician.name, yPosition)
+    yPosition = this.addText('Telepon', assignment.leadTechnician.phone, yPosition)
+    
+    if (assignment.assistants.length > 0) {
+      yPosition = this.addText('Teknisi Asisten', assignment.assistants.map(a => a.technician.name).join(', '), yPosition)
+    }
+    
+    // Equipment List
+    if (assignment.equipment.length > 0) {
+      yPosition += 10
+      yPosition = this.addSection('Peralatan yang Diperlukan', yPosition)
+      
+      const headers = ['Nama Peralatan', 'Jumlah', 'Satuan']
+      const data = assignment.equipment.map(item => [
+        item.equipment.name,
+        item.quantity.toString(),
+        item.equipment.unit
+      ])
+      yPosition = this.addTable(headers, data, yPosition)
+    }
+    
+    // Notes
+    if (assignment.notes) {
+      yPosition += 10
+      yPosition = this.addSection('Catatan', yPosition)
+      yPosition = this.addText('', assignment.notes, yPosition)
+    }
+    
+    // Signatures
+    yPosition += 20
+    yPosition = this.addSignatureSection(yPosition, 'Tanda Tangan')
+    
+    // Return PDF as buffer
+    return this.doc.output('arraybuffer')
+  }
+
   async generateCompletionReport(assignment: AssignmentData): Promise<void> {
     this.addHeader('BERITA ACARA SERAH TERIMA PEKERJAAN')
     
@@ -252,6 +313,54 @@ class PDFService {
     
     // Save the PDF
     this.doc.save(`berita-acara-${assignment.id}.pdf`)
+  }
+
+  async generateCompletionReportBuffer(assignment: AssignmentData): Promise<Uint8Array> {
+    this.addHeader('BERITA ACARA SERAH TERIMA PEKERJAAN')
+    
+    let yPosition = 80
+    
+    // Assignment Details
+    yPosition = this.addSection('Detail Penugasan', yPosition)
+    yPosition = this.addText('Nomor Laporan', assignment.id, yPosition)
+    yPosition = this.addText('Nama Klien', assignment.client.name, yPosition)
+    yPosition = this.addText('Jenis Layanan', assignment.serviceType.name, yPosition)
+    yPosition = this.addText('Periode Pekerjaan', `${this.formatDate(assignment.startDate)} - ${this.formatDate(assignment.endDate)}`, yPosition)
+    
+    // Work Summary
+    yPosition += 10
+    yPosition = this.addSection('Ringkasan Pekerjaan', yPosition)
+    yPosition = this.addText('Deskripsi Layanan', assignment.serviceType.description || 'Pekerjaan telah selesai sesuai kesepakatan', yPosition)
+    yPosition = this.addText('Kondisi Akhir', 'Semua pekerjaan telah selesai dengan baik dan telah diuji', yPosition)
+    
+    // Equipment Used
+    if (assignment.equipment.length > 0) {
+      yPosition += 10
+      yPosition = this.addSection('Peralatan yang Digunakan', yPosition)
+      
+      const headers = ['Nama Peralatan', 'Jumlah Digunakan', 'Satuan']
+      const data = assignment.equipment.map(item => [
+        item.equipment.name,
+        item.quantity.toString(),
+        item.equipment.unit
+      ])
+      yPosition = this.addTable(headers, data, yPosition)
+    }
+    
+    // Notes
+    if (assignment.notes) {
+      yPosition += 10
+      yPosition = this.addSection('Catatan Tambahan', yPosition)
+      yPosition = this.addText('', assignment.notes, yPosition)
+    }
+    
+    // Signatures
+    yPosition += 20
+    yPosition = this.addSignatureSection(yPosition, 'Tanda Tangan Klien')
+    yPosition = this.addSignatureSection(yPosition + 40, 'Tanda Tangan Teknisi')
+    
+    // Return PDF as buffer
+    return this.doc.output('arraybuffer')
   }
 
   async generatePaymentReceipt(assignment: AssignmentData, costBreakdown: CostBreakdown): Promise<void> {
@@ -321,6 +430,75 @@ class PDFService {
     
     // Save the PDF
     this.doc.save(`tagihan-${assignment.id}.pdf`)
+  }
+
+  async generatePaymentReceiptBuffer(assignment: AssignmentData, costBreakdown: CostBreakdown): Promise<Uint8Array> {
+    this.addHeader('TAGIHAN PEMBAYARAN TEKNISI')
+    
+    let yPosition = 80
+    
+    // Receipt Details
+    yPosition = this.addSection('Detail Tagihan', yPosition)
+    yPosition = this.addText('Nomor Tagihan', assignment.id, yPosition)
+    yPosition = this.addText('Nomor Penugasan', assignment.id, yPosition)
+    yPosition = this.addText('Tanggal Tagihan', new Date().toLocaleDateString('id-ID'), yPosition)
+    
+    // Company Information (Pihak yang membayar)
+    yPosition += 10
+    yPosition = this.addSection('Diterbitkan Oleh', yPosition)
+    yPosition = this.addText('Perusahaan', 'Clasnet Group', yPosition)
+    yPosition = this.addText('Alamat', 'Jl. Serulingmas No. 32, Banjarnegara, Indonesia', yPosition)
+    yPosition = this.addText('Telepon', '+62 286 123456', yPosition)
+    
+    // Technician Information (Pihak yang menerima pembayaran)
+    yPosition += 10
+    yPosition = this.addSection('Dibayarkan Kepada', yPosition)
+    yPosition = this.addText('Nama Teknisi', assignment.leadTechnician.name, yPosition)
+    yPosition = this.addText('Telepon', assignment.leadTechnician.phone, yPosition)
+    yPosition = this.addText('Alamat', assignment.leadTechnician.address, yPosition)
+    
+    // Assignment Information
+    yPosition += 10
+    yPosition = this.addSection('Informasi Penugasan', yPosition)
+    yPosition = this.addText('Klien', assignment.client.name, yPosition)
+    yPosition = this.addText('Jenis Layanan', assignment.serviceType.name, yPosition)
+    yPosition = this.addText('Periode', `${this.formatDate(assignment.startDate)} - ${this.formatDate(assignment.endDate)}`, yPosition)
+    
+    // Cost Breakdown
+    yPosition += 10
+    yPosition = this.addSection('Rincian Tagihan', yPosition)
+    
+    const headers = ['Deskripsi', 'Jumlah (IDR)']
+    const data = [
+      ['Fee Teknisi', this.formatRupiah(costBreakdown.technicianFee)],
+      ['Biaya Transport', this.formatRupiah(costBreakdown.transportCost)],
+      ['Akomodasi', this.formatRupiah(costBreakdown.accommodation)],
+      ['Biaya Peralatan Insidental', this.formatRupiah(costBreakdown.incidentalEquipmentCost)],
+      ['TOTAL TAGIHAN', this.formatRupiah(costBreakdown.total)]
+    ]
+    yPosition = this.addTable(headers, data, yPosition)
+    
+    // Payment Confirmation
+    yPosition += 10
+    yPosition = this.addSection('Konfirmasi Pembayaran', yPosition)
+    yPosition = this.addText('Status Pembayaran', 'LUNAS', yPosition)
+    yPosition = this.addText('Metode Pembayaran', 'Transfer Bank', yPosition)
+    yPosition = this.addText('Tanggal Pembayaran', new Date().toLocaleDateString('id-ID'), yPosition)
+    
+    // Notes
+    if (assignment.notes) {
+      yPosition += 10
+      yPosition = this.addSection('Catatan', yPosition)
+      yPosition = this.addText('', assignment.notes, yPosition)
+    }
+    
+    // Signatures
+    yPosition += 20
+    yPosition = this.addSignatureSection(yPosition, 'Dibayar Oleh (Wakil Perusahaan)')
+    yPosition = this.addSignatureSection(yPosition + 40, 'Diterima Oleh (Teknisi)')
+    
+    // Return PDF as buffer
+    return this.doc.output('arraybuffer')
   }
 
   async generateFromHTML(elementId: string, filename: string): Promise<void> {
