@@ -95,7 +95,7 @@ export default function TechnicianManagement() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this technician?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus teknisi ini?')) {
       try {
         const response = await fetch(`/api/technicians/${id}`, {
           method: 'DELETE',
@@ -124,6 +124,10 @@ export default function TechnicianManagement() {
     return type === 'FREELANCE' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
   }
 
+  const getTypeText = (type: string) => {
+    return type === 'FREELANCE' ? 'Freelance' : 'Tetap'
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -137,28 +141,28 @@ export default function TechnicianManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Technician Management</h2>
-          <p className="text-muted-foreground">Manage your team of freelance and permanent technicians</p>
+          <h2 className="text-2xl font-bold">Manajemen Teknisi</h2>
+          <p className="text-muted-foreground">Kelola tim teknisi freelance dan tetap Anda</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Technician
+              Tambah Teknisi
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>
-                {editingTechnician ? 'Edit Technician' : 'Add New Technician'}
+                {editingTechnician ? 'Edit Teknisi' : 'Tambah Teknisi Baru'}
               </DialogTitle>
               <DialogDescription>
-                {editingTechnician ? 'Update technician information' : 'Add a new technician to your team'}
+                {editingTechnician ? 'Perbarui informasi teknisi' : 'Tambah teknisi baru ke tim Anda'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
+                <Label htmlFor="name">Nama *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -167,7 +171,7 @@ export default function TechnicianManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone *</Label>
+                <Label htmlFor="phone">Telepon *</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -176,7 +180,7 @@ export default function TechnicianManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">Alamat *</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
@@ -185,32 +189,32 @@ export default function TechnicianManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="type">Type *</Label>
+                <Label htmlFor="type">Tipe *</Label>
                 <Select value={formData.type} onValueChange={(value: 'FREELANCE' | 'PERMANENT') => setFormData({ ...formData, type: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="FREELANCE">Freelance</SelectItem>
-                    <SelectItem value="PERMANENT">Permanent</SelectItem>
+                    <SelectItem value="PERMANENT">Tetap</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="expertise">Expertise</Label>
+                <Label htmlFor="expertise">Keahlian</Label>
                 <Textarea
                   id="expertise"
                   value={formData.expertise}
                   onChange={(e) => setFormData({ ...formData, expertise: e.target.value })}
-                  placeholder="e.g., Network Installation, CCTV Setup, Server Maintenance"
+                  placeholder="contoh: Instalasi Jaringan, Setup CCTV, Maintenance Server"
                 />
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit">
-                  {editingTechnician ? 'Update' : 'Create'}
+                  {editingTechnician ? 'Perbarui' : 'Buat'}
                 </Button>
               </div>
             </form>
@@ -222,7 +226,7 @@ export default function TechnicianManagement() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Technicians</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Teknisi</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -242,7 +246,7 @@ export default function TechnicianManagement() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Permanent</CardTitle>
+            <CardTitle className="text-sm font-medium">Tetap</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -258,7 +262,7 @@ export default function TechnicianManagement() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search technicians..."
+            placeholder="Cari teknisi..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -266,12 +270,12 @@ export default function TechnicianManagement() {
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by type" />
+            <SelectValue placeholder="Filter berdasarkan tipe" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="all">Semua Tipe</SelectItem>
             <SelectItem value="FREELANCE">Freelance</SelectItem>
-            <SelectItem value="PERMANENT">Permanent</SelectItem>
+            <SelectItem value="PERMANENT">Tetap</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -282,11 +286,11 @@ export default function TechnicianManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Expertise</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead>Kontak</TableHead>
+                <TableHead>Tipe</TableHead>
+                <TableHead>Keahlian</TableHead>
+                <TableHead>Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -309,7 +313,7 @@ export default function TechnicianManagement() {
                   </TableCell>
                   <TableCell>
                     <Badge className={getTypeColor(technician.type)}>
-                      {technician.type}
+                      {getTypeText(technician.type)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -341,7 +345,7 @@ export default function TechnicianManagement() {
           </Table>
           {technicians.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No technicians found. Add your first technician to get started.
+              Tidak ada teknisi ditemukan. Tambah teknisi pertama Anda untuk memulai.
             </div>
           )}
         </CardContent>

@@ -41,10 +41,10 @@ export default function Login({ onLogin }: LoginProps) {
         localStorage.setItem('user', JSON.stringify(data.user))
         onLogin(data.user)
       } else {
-        setError(data.error || 'Login failed')
+        setError(data.error || 'Login gagal')
       }
     } catch (error) {
-      setError('Network error. Please try again.')
+      setError('Terjadi kesalahan jaringan. Silakan coba lagi.')
     } finally {
       setLoading(false)
     }
@@ -56,7 +56,7 @@ export default function Login({ onLogin }: LoginProps) {
         {/* Company Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Clasnet Group</h1>
-          <p className="text-gray-600 mt-2">Technician Assignment Management System</p>
+          <p className="text-gray-600 mt-2">Sistem Manajemen Penugasan Teknisi</p>
           <p className="text-sm text-gray-500 mt-1">Jl. Serulingmas No. 32, Banjarnegara, Indonesia</p>
         </div>
 
@@ -64,10 +64,10 @@ export default function Login({ onLogin }: LoginProps) {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2">
               <Lock className="h-5 w-5" />
-              Admin Login
+              Login Administrator
             </CardTitle>
             <CardDescription>
-              Enter your credentials to access the system
+              Masukkan kredensial Anda untuk mengakses sistem
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -91,14 +91,14 @@ export default function Login({ onLogin }: LoginProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Kata Sandi</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="Masukkan kata sandi Anda"
                     required
                   />
                   <Button
@@ -118,14 +118,14 @@ export default function Login({ onLogin }: LoginProps) {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? 'Masuk...' : 'Masuk'}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-gray-500">
-              <p>Default credentials:</p>
+              <p>Kredensial default:</p>
               <p>Email: admin@clasnet.com</p>
-              <p>Password: admin123</p>
+              <p>Kata Sandi: admin123</p>
             </div>
           </CardContent>
         </Card>

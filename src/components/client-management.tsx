@@ -88,7 +88,7 @@ export default function ClientManagement() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this client?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus klien ini?')) {
       try {
         const response = await fetch(`/api/clients/${id}`, {
           method: 'DELETE',
@@ -125,28 +125,28 @@ export default function ClientManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Client Management</h2>
-          <p className="text-muted-foreground">Manage your client portfolio</p>
+          <h2 className="text-2xl font-bold">Manajemen Klien</h2>
+          <p className="text-muted-foreground">Kelola portofolio klien Anda</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Client
+              Tambah Klien
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>
-                {editingClient ? 'Edit Client' : 'Add New Client'}
+                {editingClient ? 'Edit Klien' : 'Tambah Klien Baru'}
               </DialogTitle>
               <DialogDescription>
-                {editingClient ? 'Update client information' : 'Add a new client to your portfolio'}
+                {editingClient ? 'Perbarui informasi klien' : 'Tambah klien baru ke portofolio Anda'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Company Name *</Label>
+                <Label htmlFor="name">Nama Perusahaan *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -155,7 +155,7 @@ export default function ClientManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactPerson">Contact Person</Label>
+                <Label htmlFor="contactPerson">Kontak Person</Label>
                 <Input
                   id="contactPerson"
                   value={formData.contactPerson}
@@ -163,7 +163,7 @@ export default function ClientManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone *</Label>
+                <Label htmlFor="phone">Telepon *</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -172,7 +172,7 @@ export default function ClientManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">Alamat *</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
@@ -182,10 +182,10 @@ export default function ClientManagement() {
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit">
-                  {editingClient ? 'Update' : 'Create'}
+                  {editingClient ? 'Perbarui' : 'Buat'}
                 </Button>
               </div>
             </form>
@@ -196,7 +196,7 @@ export default function ClientManagement() {
       {/* Stats Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Klien</CardTitle>
           <Building className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -208,7 +208,7 @@ export default function ClientManagement() {
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search clients..."
+          placeholder="Cari klien..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -221,11 +221,11 @@ export default function ClientManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Contact Person</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Perusahaan</TableHead>
+                <TableHead>Kontak Person</TableHead>
+                <TableHead>Telepon</TableHead>
+                <TableHead>Alamat</TableHead>
+                <TableHead>Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -275,7 +275,7 @@ export default function ClientManagement() {
           </Table>
           {clients.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No clients found. Add your first client to get started.
+              Tidak ada klien ditemukan. Tambah klien pertama Anda untuk memulai.
             </div>
           )}
         </CardContent>

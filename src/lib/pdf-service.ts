@@ -44,7 +44,7 @@ class PDFService {
     this.doc.setFontSize(10)
     this.doc.setFont('helvetica', 'normal')
     this.doc.text('Jl. Serulingmas No. 32, Banjarnegara, Indonesia', this.pageWidth / 2, 38, { align: 'center' })
-    this.doc.text('Phone: +62 286 123456', this.pageWidth / 2, 44, { align: 'center' })
+    this.doc.text('Telepon: +62 286 123456', this.pageWidth / 2, 44, { align: 'center' })
     
     // Document Title
     this.doc.setFontSize(14)
@@ -111,52 +111,78 @@ class PDFService {
     const signatureY = yPosition + 30
     this.doc.setFont('helvetica', 'normal')
     this.doc.text('_________________________', this.margin, signatureY)
-    this.doc.text('Signature', this.margin, signatureY + 5)
+    this.doc.text('Tanda Tangan', this.margin, signatureY + 5)
     
     this.doc.text('_________________________', this.pageWidth - this.margin - 60, signatureY)
-    this.doc.text('Date', this.pageWidth - this.margin - 60, signatureY + 5)
+    this.doc.text('Tanggal', this.pageWidth - this.margin - 60, signatureY + 5)
     
     return signatureY + 20
   }
 
+  private formatRupiah(amount: number): string {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(amount)
+  }
+
+  private formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
+  private getStatusText(status: string): string {
+    switch (status) {
+      case 'PENDING': return 'Menunggu'
+      case 'IN_PROGRESS': return 'Dalam Proses'
+      case 'COMPLETED': return 'Selesai'
+      case 'CANCELLED': return 'Dibatalkan'
+      default: return status
+    }
+  }
+
   async generateWorkOrder(assignment: AssignmentData): Promise<void> {
-    this.addHeader('SURAT PERINTAH KERJA (WORK ORDER)')
+    this.addHeader('SURAT PERINTAH KERJA (SPK)')
     
     let yPosition = 80
     
     // Assignment Details
-    yPosition = this.addSection('Assignment Details', yPosition)
-    yPosition = this.addText('Work Order ID', assignment.id, yPosition)
-    yPosition = this.addText('Client Name', assignment.client.name, yPosition)
-    yPosition = this.addText('Service Type', assignment.serviceType.name, yPosition)
-    yPosition = this.addText('Start Date', new Date(assignment.startDate).toLocaleDateString('id-ID'), yPosition)
-    yPosition = this.addText('End Date', new Date(assignment.endDate).toLocaleDateString('id-ID'), yPosition)
-    yPosition = this.addText('Status', assignment.status.replace('_', ' '), yPosition)
+    yPosition = this.addSection('Detail Penugasan', yPosition)
+    yPosition = this.addText('Nomor SPK', assignment.id, yPosition)
+    yPosition = this.addText('Nama Klien', assignment.client.name, yPosition)
+    yPosition = this.addText('Jenis Layanan', assignment.serviceType.name, yPosition)
+    yPosition = this.addText('Tanggal Mulai', this.formatDate(assignment.startDate), yPosition)
+    yPosition = this.addText('Tanggal Selesai', this.formatDate(assignment.endDate), yPosition)
+    yPosition = this.addText('Status', this.getStatusText(assignment.status), yPosition)
     
     // Client Information
     yPosition += 10
-    yPosition = this.addSection('Client Information', yPosition)
-    yPosition = this.addText('Company', assignment.client.name, yPosition)
-    yPosition = this.addText('Contact Person', assignment.client.contactPerson || '-', yPosition)
-    yPosition = this.addText('Phone', assignment.client.phone, yPosition)
-    yPosition = this.addText('Address', assignment.client.address, yPosition)
+    yPosition = this.addSection('Informasi Klien', yPosition)
+    yPosition = this.addText('Perusahaan', assignment.client.name, yPosition)
+    yPosition = this.addText('Kontak Person', assignment.client.contactPerson || '-', yPosition)
+    yPosition = this.addText('Telepon', assignment.client.phone, yPosition)
+    yPosition = this.addText('Alamat', assignment.client.address, yPosition)
     
     // Technician Information
     yPosition += 10
-    yPosition = this.addSection('Technician Information', yPosition)
-    yPosition = this.addText('Lead Technician (PIC)', assignment.leadTechnician.name, yPosition)
-    yPosition = this.addText('Phone', assignment.leadTechnician.phone, yPosition)
+    yPosition = this.addSection('Informasi Teknisi', yPosition)
+    yPosition = this.addText('Teknisi Utama (PIC)', assignment.leadTechnician.name, yPosition)
+    yPosition = this.addText('Telepon', assignment.leadTechnician.phone, yPosition)
     
     if (assignment.assistants.length > 0) {
-      yPosition = this.addText('Assistant Technicians', assignment.assistants.map(a => a.technician.name).join(', '), yPosition)
+      yPosition = this.addText('Teknisi Asisten', assignment.assistants.map(a => a.technician.name).join(', '), yPosition)
     }
     
     // Equipment List
     if (assignment.equipment.length > 0) {
       yPosition += 10
-      yPosition = this.addSection('Equipment Required', yPosition)
+      yPosition = this.addSection('Peralatan yang Diperlukan', yPosition)
       
-      const headers = ['Equipment Name', 'Quantity', 'Unit']
+      const headers = ['Nama Peralatan', 'Jumlah', 'Satuan']
       const data = assignment.equipment.map(item => [
         item.equipment.name,
         item.quantity.toString(),
@@ -168,42 +194,42 @@ class PDFService {
     // Notes
     if (assignment.notes) {
       yPosition += 10
-      yPosition = this.addSection('Notes', yPosition)
+      yPosition = this.addSection('Catatan', yPosition)
       yPosition = this.addText('', assignment.notes, yPosition)
     }
     
     // Signatures
     yPosition += 20
-    yPosition = this.addSignatureSection(yPosition, 'Signatures')
+    yPosition = this.addSignatureSection(yPosition, 'Tanda Tangan')
     
     // Save the PDF
-    this.doc.save(`work-order-${assignment.id}.pdf`)
+    this.doc.save(`spk-${assignment.id}.pdf`)
   }
 
   async generateCompletionReport(assignment: AssignmentData): Promise<void> {
-    this.addHeader('BERITA ACARA SERAH TERIMA (COMPLETION REPORT)')
+    this.addHeader('BERITA ACARA SERAH TERIMA PEKERJAAN')
     
     let yPosition = 80
     
     // Assignment Details
-    yPosition = this.addSection('Assignment Details', yPosition)
-    yPosition = this.addText('Report ID', assignment.id, yPosition)
-    yPosition = this.addText('Client Name', assignment.client.name, yPosition)
-    yPosition = this.addText('Service Type', assignment.serviceType.name, yPosition)
-    yPosition = this.addText('Work Period', `${new Date(assignment.startDate).toLocaleDateString('id-ID')} - ${new Date(assignment.endDate).toLocaleDateString('id-ID')}`, yPosition)
+    yPosition = this.addSection('Detail Penugasan', yPosition)
+    yPosition = this.addText('Nomor Laporan', assignment.id, yPosition)
+    yPosition = this.addText('Nama Klien', assignment.client.name, yPosition)
+    yPosition = this.addText('Jenis Layanan', assignment.serviceType.name, yPosition)
+    yPosition = this.addText('Periode Pekerjaan', `${this.formatDate(assignment.startDate)} - ${this.formatDate(assignment.endDate)}`, yPosition)
     
     // Work Summary
     yPosition += 10
-    yPosition = this.addSection('Work Summary', yPosition)
-    yPosition = this.addText('Service Description', assignment.serviceType.description || 'Service completed as per agreement', yPosition)
-    yPosition = this.addText('Final Condition', 'All work has been completed successfully and tested', yPosition)
+    yPosition = this.addSection('Ringkasan Pekerjaan', yPosition)
+    yPosition = this.addText('Deskripsi Layanan', assignment.serviceType.description || 'Pekerjaan telah selesai sesuai kesepakatan', yPosition)
+    yPosition = this.addText('Kondisi Akhir', 'Semua pekerjaan telah selesai dengan baik dan telah diuji', yPosition)
     
     // Equipment Used
     if (assignment.equipment.length > 0) {
       yPosition += 10
-      yPosition = this.addSection('Equipment Used', yPosition)
+      yPosition = this.addSection('Peralatan yang Digunakan', yPosition)
       
-      const headers = ['Equipment Name', 'Quantity Used', 'Unit']
+      const headers = ['Nama Peralatan', 'Jumlah Digunakan', 'Satuan']
       const data = assignment.equipment.map(item => [
         item.equipment.name,
         item.quantity.toString(),
@@ -215,71 +241,71 @@ class PDFService {
     // Notes
     if (assignment.notes) {
       yPosition += 10
-      yPosition = this.addSection('Additional Notes', yPosition)
+      yPosition = this.addSection('Catatan Tambahan', yPosition)
       yPosition = this.addText('', assignment.notes, yPosition)
     }
     
     // Signatures
     yPosition += 20
-    yPosition = this.addSignatureSection(yPosition, 'Client Signature')
-    yPosition = this.addSignatureSection(yPosition + 40, 'Technician Signature')
+    yPosition = this.addSignatureSection(yPosition, 'Tanda Tangan Klien')
+    yPosition = this.addSignatureSection(yPosition + 40, 'Tanda Tangan Teknisi')
     
     // Save the PDF
-    this.doc.save(`completion-report-${assignment.id}.pdf`)
+    this.doc.save(`berita-acara-${assignment.id}.pdf`)
   }
 
   async generatePaymentReceipt(assignment: AssignmentData, costBreakdown: CostBreakdown): Promise<void> {
-    this.addHeader('KWITANSI PEMBAYARAN (PAYMENT RECEIPT)')
+    this.addHeader('KWITANSI PEMBAYARAN')
     
     let yPosition = 80
     
     // Receipt Details
-    yPosition = this.addSection('Receipt Details', yPosition)
-    yPosition = this.addText('Receipt ID', assignment.id, yPosition)
-    yPosition = this.addText('Assignment ID', assignment.id, yPosition)
-    yPosition = this.addText('Payment Date', new Date().toLocaleDateString('id-ID'), yPosition)
+    yPosition = this.addSection('Detail Kwitansi', yPosition)
+    yPosition = this.addText('Nomor Kwitansi', assignment.id, yPosition)
+    yPosition = this.addText('Nomor Penugasan', assignment.id, yPosition)
+    yPosition = this.addText('Tanggal Pembayaran', new Date().toLocaleDateString('id-ID'), yPosition)
     
     // Technician Information
     yPosition += 10
-    yPosition = this.addSection('Paid To', yPosition)
-    yPosition = this.addText('Technician Name', assignment.leadTechnician.name, yPosition)
-    yPosition = this.addText('Phone', assignment.leadTechnician.phone, yPosition)
-    yPosition = this.addText('Address', assignment.leadTechnician.address, yPosition)
+    yPosition = this.addSection('Dibayarkan Kepada', yPosition)
+    yPosition = this.addText('Nama Teknisi', assignment.leadTechnician.name, yPosition)
+    yPosition = this.addText('Telepon', assignment.leadTechnician.phone, yPosition)
+    yPosition = this.addText('Alamat', assignment.leadTechnician.address, yPosition)
     
     // Cost Breakdown
     yPosition += 10
-    yPosition = this.addSection('Payment Breakdown', yPosition)
+    yPosition = this.addSection('Rincian Pembayaran', yPosition)
     
-    const headers = ['Description', 'Amount (IDR)']
+    const headers = ['Deskripsi', 'Jumlah (IDR)']
     const data = [
-      ['Technician Fee', `Rp ${costBreakdown.technicianFee.toLocaleString('id-ID')}`],
-      ['Transport Cost', `Rp ${costBreakdown.transportCost.toLocaleString('id-ID')}`],
-      ['Accommodation', `Rp ${costBreakdown.accommodation.toLocaleString('id-ID')}`],
-      ['Incidental Equipment Cost', `Rp ${costBreakdown.incidentalEquipmentCost.toLocaleString('id-ID')}`],
-      ['TOTAL', `Rp ${costBreakdown.total.toLocaleString('id-ID')}`]
+      ['Fee Teknisi', this.formatRupiah(costBreakdown.technicianFee)],
+      ['Biaya Transport', this.formatRupiah(costBreakdown.transportCost)],
+      ['Akomodasi', this.formatRupiah(costBreakdown.accommodation)],
+      ['Biaya Peralatan Insidental', this.formatRupiah(costBreakdown.incidentalEquipmentCost)],
+      ['TOTAL', this.formatRupiah(costBreakdown.total)]
     ]
     yPosition = this.addTable(headers, data, yPosition)
     
     // Payment Confirmation
     yPosition += 10
-    yPosition = this.addSection('Payment Confirmation', yPosition)
-    yPosition = this.addText('Payment Status', 'PAID', yPosition)
-    yPosition = this.addText('Payment Method', 'Bank Transfer', yPosition)
+    yPosition = this.addSection('Konfirmasi Pembayaran', yPosition)
+    yPosition = this.addText('Status Pembayaran', 'LUNAS', yPosition)
+    yPosition = this.addText('Metode Pembayaran', 'Transfer Bank', yPosition)
     
     // Notes
     if (assignment.notes) {
       yPosition += 10
-      yPosition = this.addSection('Notes', yPosition)
+      yPosition = this.addSection('Catatan', yPosition)
       yPosition = this.addText('', assignment.notes, yPosition)
     }
     
     // Signatures
     yPosition += 20
-    yPosition = this.addSignatureSection(yPosition, 'Paid By (Company Representative)')
-    yPosition = this.addSignatureSection(yPosition + 40, 'Received By (Technician)')
+    yPosition = this.addSignatureSection(yPosition, 'Dibayar Oleh (Wakil Perusahaan)')
+    yPosition = this.addSignatureSection(yPosition + 40, 'Diterima Oleh (Teknisi)')
     
     // Save the PDF
-    this.doc.save(`payment-receipt-${assignment.id}.pdf`)
+    this.doc.save(`kwitansi-${assignment.id}.pdf`)
   }
 
   async generateFromHTML(elementId: string, filename: string): Promise<void> {

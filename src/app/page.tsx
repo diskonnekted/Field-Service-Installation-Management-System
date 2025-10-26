@@ -99,7 +99,7 @@ export default function Home() {
         {
           id: '1',
           clientName: 'PT. Maju Bersama',
-          serviceType: 'Network Installation',
+          serviceType: 'Instalasi Jaringan',
           leadTechnician: 'Ahmad Wijaya',
           status: 'IN_PROGRESS',
           startDate: '2024-01-15',
@@ -108,7 +108,7 @@ export default function Home() {
         {
           id: '2',
           clientName: 'CV. Teknologi Solusi',
-          serviceType: 'CCTV Setup',
+          serviceType: 'Setup CCTV',
           leadTechnician: 'Budi Santoso',
           status: 'PENDING',
           startDate: '2024-01-20',
@@ -117,7 +117,7 @@ export default function Home() {
         {
           id: '3',
           clientName: 'PT. Digital Kreatif',
-          serviceType: 'Server Maintenance',
+          serviceType: 'Maintenance Server',
           leadTechnician: 'Siti Nurhaliza',
           status: 'COMPLETED',
           startDate: '2024-01-10',
@@ -166,6 +166,16 @@ export default function Home() {
     }
   }
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'PENDING': return 'Menunggu'
+      case 'IN_PROGRESS': return 'Dalam Proses'
+      case 'COMPLETED': return 'Selesai'
+      case 'CANCELLED': return 'Dibatalkan'
+      default: return status
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       day: 'numeric',
@@ -191,14 +201,14 @@ export default function Home() {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold text-gray-900">Clasnet Group</h1>
-                <p className="text-sm text-gray-500">Technician Assignment Management System</p>
+                <p className="text-sm text-gray-500">Sistem Manajemen Penugasan Teknisi</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+              <span className="text-sm text-gray-600">Selamat datang, {user?.name}</span>
               <Button variant="outline" size="sm">
                 <Search className="h-4 w-4 mr-2" />
-                Search
+                Cari
               </Button>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
@@ -206,7 +216,7 @@ export default function Home() {
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                Keluar
               </Button>
             </div>
           </div>
@@ -225,7 +235,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Technicians</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Teknisi</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -238,39 +248,39 @@ export default function Home() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Assignments</CardTitle>
+              <CardTitle className="text-sm font-medium">Penugasan Aktif</CardTitle>
               <Wrench className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.activeAssignments}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.pendingAssignments} pending
+                {stats.pendingAssignments} menunggu
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Klien</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalClients}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.upcomingJobs} upcoming jobs
+                {stats.upcomingJobs} pekerjaan mendatang
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed This Month</CardTitle>
+              <CardTitle className="text-sm font-medium">Selesai Bulan Ini</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.completedAssignments}</div>
               <p className="text-xs text-muted-foreground">
-                All time assignments
+                Semua penugasan
               </p>
             </CardContent>
           </Card>
@@ -279,19 +289,19 @@ export default function Home() {
         {/* Main Content */}
         <Tabs defaultValue="assignments" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="assignments">Recent Assignments</TabsTrigger>
-            <TabsTrigger value="assignment-management">Assignment Management</TabsTrigger>
-            <TabsTrigger value="technicians">Technicians</TabsTrigger>
-            <TabsTrigger value="clients">Clients</TabsTrigger>
-            <TabsTrigger value="services">Services & Equipment</TabsTrigger>
+            <TabsTrigger value="assignments">Penugasan Terbaru</TabsTrigger>
+            <TabsTrigger value="assignment-management">Manajemen Penugasan</TabsTrigger>
+            <TabsTrigger value="technicians">Teknisi</TabsTrigger>
+            <TabsTrigger value="clients">Klien</TabsTrigger>
+            <TabsTrigger value="services">Layanan & Peralatan</TabsTrigger>
           </TabsList>
 
           <TabsContent value="assignments" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Recent Assignments</h2>
+              <h2 className="text-lg font-semibold">Penugasan Terbaru</h2>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                New Assignment
+                Penugasan Baru
               </Button>
             </div>
             
@@ -303,17 +313,17 @@ export default function Home() {
                       <div className="space-y-1">
                         <h3 className="font-semibold">{assignment.clientName}</h3>
                         <p className="text-sm text-muted-foreground">{assignment.serviceType}</p>
-                        <p className="text-sm">Lead: {assignment.leadTechnician}</p>
+                        <p className="text-sm">PIC: {assignment.leadTechnician}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatDate(assignment.startDate)} - {formatDate(assignment.endDate)}
                         </p>
                       </div>
                       <div className="text-right space-y-2">
                         <Badge className={getStatusColor(assignment.status)}>
-                          {assignment.status.replace('_', ' ')}
+                          {getStatusText(assignment.status)}
                         </Badge>
                         <div className="space-x-2">
-                          <Button variant="outline" size="sm">View</Button>
+                          <Button variant="outline" size="sm">Lihat</Button>
                           <Button variant="outline" size="sm">Edit</Button>
                         </div>
                       </div>
