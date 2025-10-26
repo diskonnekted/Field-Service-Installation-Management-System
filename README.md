@@ -2,12 +2,12 @@
 
 A comprehensive web-based system for managing technician assignments, designed specifically for Clasnet Group in Banjarnegara, Indonesia.
 
-## 🏢 Company Information
+## Company Information
 **Clasnet Group**  
 Jl. Serulingmas No. 32, Banjarnegara, Indonesia  
 Phone: +62 286 123456
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
 - **Technician Management**: Manage freelance and permanent technicians with expertise tracking
@@ -24,7 +24,7 @@ Phone: +62 286 123456
 - **Berita Acara Serah Terima (Completion Report)**: Service completion documentation
 - **Kwitansi (Payment Receipt)**: Technician payment documentation
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 - **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Next.js API Routes with Prisma ORM
@@ -33,18 +33,18 @@ Phone: +62 286 123456
 - **PDF Generation**: jsPDF with html2canvas
 - **UI Components**: shadcn/ui component library
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js 18+ 
 - npm or yarn
 - Git
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone and Install
 ```bash
-git clone <repository-url>
-cd clasnet-technician-management
+git clone https://github.com/diskonnekted/Field-Service-Installation-Management-System.git
+cd Field-Service-Installation-Management-System
 npm install
 ```
 
@@ -64,12 +64,12 @@ npm run dev
 
 The application will be available at `http://localhost:3000`
 
-## 🔐 Default Login Credentials
+## Default Login Credentials
 
 - **Email**: admin@clasnet.com
 - **Password**: admin123
 
-## 📊 Database Schema
+## Database Schema
 
 ### Core Entities
 - **Admin**: System administrators
@@ -89,18 +89,18 @@ The application will be available at `http://localhost:3000`
 - **Equipment Management**: Stock tracking and assignment
 - **Documentation**: Photo/file path support
 
-## 🎯 Usage Guide
+## Usage Guide
 
 ### 1. Initial Setup
 1. Login with default credentials
-2. Navigate to "Services & Equipment" tab
+2. Navigate to "Layanan & Peralatan" tab
 3. Add your service types and equipment inventory
 4. Add technicians (freelance/permanent) with their expertise
 5. Add clients to your portfolio
 
 ### 2. Creating Assignments
-1. Go to "Assignment Management" tab
-2. Click "New Assignment"
+1. Go to "Manajemen Penugasan" tab
+2. Click "Penugasan Baru"
 3. Select client, service type, and lead technician (PIC)
 4. Add assistant technicians if needed
 5. Select required equipment with quantities
@@ -119,7 +119,7 @@ From any assignment, you can generate:
 - **Completion Report**: Service completion documentation
 - **Payment Receipt**: Technician payment breakdown
 
-## 🔧 Development
+## Development
 
 ### Project Structure
 ```
@@ -194,7 +194,7 @@ src/
 - `DELETE /api/assignments/[id]` - Delete assignment
 - `GET /api/assignments/[id]/pdf` - Generate PDF
 
-## 🔒 Security Features
+## Security Features
 
 - Password hashing with bcrypt
 - Token-based authentication
@@ -202,7 +202,7 @@ src/
 - SQL injection prevention with Prisma ORM
 - XSS protection with proper output escaping
 
-## 🚀 Production Deployment
+## Production Deployment
 
 ### Environment Variables
 Create `.env.local` file:
@@ -223,7 +223,7 @@ npm run build
 npm start
 ```
 
-## 📈 Scalability Considerations
+## Scalability Considerations
 
 - **Database**: Easily upgrade from SQLite to PostgreSQL/MySQL
 - **Authentication**: Can be extended to NextAuth.js for social logins
@@ -232,7 +232,7 @@ npm start
 - **Invoicing**: Can extend to client billing system
 - **Reporting**: Can add advanced analytics and reporting
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -240,13 +240,13 @@ npm start
 4. Test thoroughly
 5. Submit a pull request
 
-## 📞 Support
+## Support
 
 For technical support or questions:
 - Email: support@clasnet.com
 - Phone: +62 286 123456
 
-## 📄 License
+## License
 
 This project is proprietary to Clasnet Group. All rights reserved.
 
