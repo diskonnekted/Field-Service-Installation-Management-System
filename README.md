@@ -1,141 +1,256 @@
-# 🚀 Welcome to Z.ai Code Scaffold
+# Clasnet Group - Technician Assignment Management System
 
-A modern, production-ready web application scaffold powered by cutting-edge technologies, designed to accelerate your development with [Z.ai](https://chat.z.ai)'s AI-powered coding assistance.
+A comprehensive web-based system for managing technician assignments, designed specifically for Clasnet Group in Banjarnegara, Indonesia.
 
-## ✨ Technology Stack
+## 🏢 Company Information
+**Clasnet Group**  
+Jl. Serulingmas No. 32, Banjarnegara, Indonesia  
+Phone: +62 286 123456
 
-This scaffold provides a robust foundation built with:
+## 🚀 Features
 
-### 🎯 Core Framework
-- **⚡ Next.js 15** - The React framework for production with App Router
-- **📘 TypeScript 5** - Type-safe JavaScript for better developer experience
-- **🎨 Tailwind CSS 4** - Utility-first CSS framework for rapid UI development
+### Core Functionality
+- **Technician Management**: Manage freelance and permanent technicians with expertise tracking
+- **Client Management**: Comprehensive client portfolio management
+- **Service Management**: Define service types and categories
+- **Equipment Inventory**: Track equipment stock and availability
+- **Assignment System**: Create and manage service assignments with multi-technician support
+- **PDF Generation**: Generate professional documents (Work Order, Completion Report, Payment Receipt)
+- **Dashboard**: Real-time overview of operations and statistics
+- **Search & Filter**: Advanced filtering across all modules
 
-### 🧩 UI Components & Styling
-- **🧩 shadcn/ui** - High-quality, accessible components built on Radix UI
-- **🎯 Lucide React** - Beautiful & consistent icon library
-- **🌈 Framer Motion** - Production-ready motion library for React
-- **🎨 Next Themes** - Perfect dark mode in 2 lines of code
+### Document Generation
+- **Surat Perintah Kerja (Work Order)**: Professional work assignment letters
+- **Berita Acara Serah Terima (Completion Report)**: Service completion documentation
+- **Kwitansi (Payment Receipt)**: Technician payment documentation
 
-### 📋 Forms & Validation
-- **🎣 React Hook Form** - Performant forms with easy validation
-- **✅ Zod** - TypeScript-first schema validation
+## 🛠️ Technology Stack
 
-### 🔄 State Management & Data Fetching
-- **🐻 Zustand** - Simple, scalable state management
-- **🔄 TanStack Query** - Powerful data synchronization for React
-- **🌐 Axios** - Promise-based HTTP client
+- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Next.js API Routes with Prisma ORM
+- **Database**: SQLite (development ready, easily upgradable to PostgreSQL/MySQL)
+- **Authentication**: Simple token-based authentication
+- **PDF Generation**: jsPDF with html2canvas
+- **UI Components**: shadcn/ui component library
 
-### 🗄️ Database & Backend
-- **🗄️ Prisma** - Next-generation Node.js and TypeScript ORM
-- **🔐 NextAuth.js** - Complete open-source authentication solution
+## 📋 Prerequisites
 
-### 🎨 Advanced UI Features
-- **📊 TanStack Table** - Headless UI for building tables and datagrids
-- **🖱️ DND Kit** - Modern drag and drop toolkit for React
-- **📊 Recharts** - Redefined chart library built with React and D3
-- **🖼️ Sharp** - High performance image processing
-
-### 🌍 Internationalization & Utilities
-- **🌍 Next Intl** - Internationalization library for Next.js
-- **📅 Date-fns** - Modern JavaScript date utility library
-- **🪝 ReactUse** - Collection of essential React hooks for modern development
-
-## 🎯 Why This Scaffold?
-
-- **🏎️ Fast Development** - Pre-configured tooling and best practices
-- **🎨 Beautiful UI** - Complete shadcn/ui component library with advanced interactions
-- **🔒 Type Safety** - Full TypeScript configuration with Zod validation
-- **📱 Responsive** - Mobile-first design principles with smooth animations
-- **🗄️ Database Ready** - Prisma ORM configured for rapid backend development
-- **🔐 Auth Included** - NextAuth.js for secure authentication flows
-- **📊 Data Visualization** - Charts, tables, and drag-and-drop functionality
-- **🌍 i18n Ready** - Multi-language support with Next Intl
-- **🚀 Production Ready** - Optimized build and deployment settings
-- **🤖 AI-Friendly** - Structured codebase perfect for AI assistance
+- Node.js 18+ 
+- npm or yarn
+- Git
 
 ## 🚀 Quick Start
 
+### 1. Clone and Install
 ```bash
-# Install dependencies
+git clone <repository-url>
+cd clasnet-technician-management
 npm install
+```
 
-# Start development server
+### 2. Database Setup
+```bash
+# Push database schema
+npm run db:push
+
+# Seed admin user
+npx tsx src/lib/seed-admin.ts
+```
+
+### 3. Start Development Server
+```bash
 npm run dev
+```
 
-# Build for production
+The application will be available at `http://localhost:3000`
+
+## 🔐 Default Login Credentials
+
+- **Email**: admin@clasnet.com
+- **Password**: admin123
+
+## 📊 Database Schema
+
+### Core Entities
+- **Admin**: System administrators
+- **Technicians**: Freelance and permanent technicians
+- **Clients**: Service clients
+- **Service Types**: Available services with categories
+- **Service Equipment**: Equipment inventory
+- **Service Cost Templates**: Cost structures for technician payments
+- **Assignments**: Main assignment entity with relationships
+- **Assignment Assistants**: Many-to-many for assistant technicians
+- **Assignment Equipment**: Equipment used in assignments
+
+### Key Features
+- **Freelance Focus**: Primary support for freelance technicians
+- **Cost Tracking**: Internal cost management (not client billing)
+- **Multi-technician Support**: Lead technician + assistants
+- **Equipment Management**: Stock tracking and assignment
+- **Documentation**: Photo/file path support
+
+## 🎯 Usage Guide
+
+### 1. Initial Setup
+1. Login with default credentials
+2. Navigate to "Services & Equipment" tab
+3. Add your service types and equipment inventory
+4. Add technicians (freelance/permanent) with their expertise
+5. Add clients to your portfolio
+
+### 2. Creating Assignments
+1. Go to "Assignment Management" tab
+2. Click "New Assignment"
+3. Select client, service type, and lead technician (PIC)
+4. Add assistant technicians if needed
+5. Select required equipment with quantities
+6. Set dates and total cost
+7. Add notes and create assignment
+
+### 3. Managing Assignments
+- View all assignments in the management interface
+- Filter by status, client, or service type
+- Update assignment status as work progresses
+- Generate PDF documents at any stage
+
+### 4. PDF Generation
+From any assignment, you can generate:
+- **Work Order**: Initial assignment document
+- **Completion Report**: Service completion documentation
+- **Payment Receipt**: Technician payment breakdown
+
+## 🔧 Development
+
+### Project Structure
+```
+src/
+├── app/                    # Next.js app router
+│   ├── api/               # API routes
+│   │   ├── assignments/   # Assignment CRUD
+│   │   ├── technicians/   # Technician CRUD
+│   │   ├── clients/       # Client CRUD
+│   │   ├── service-types/ # Service type CRUD
+│   │   ├── equipment/     # Equipment CRUD
+│   │   ├── dashboard/     # Dashboard stats
+│   │   └── auth/          # Authentication
+│   └── page.tsx           # Main application page
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components
+│   ├── technician-management.tsx
+│   ├── client-management.tsx
+│   ├── assignment-management.tsx
+│   ├── service-management.tsx
+│   └── login.tsx
+├── lib/                  # Utilities
+│   ├── db.ts            # Prisma client
+│   ├── pdf-service.ts   # PDF generation
+│   ├── utils.ts         # Helper functions
+│   └── seed-admin.ts    # Admin seeding
+└── prisma/
+    └── schema.prisma    # Database schema
+```
+
+### API Endpoints
+
+#### Authentication
+- `POST /api/auth/login` - Admin login
+
+#### Dashboard
+- `GET /api/dashboard/stats` - Dashboard statistics
+
+#### Technicians
+- `GET /api/technicians` - List technicians
+- `POST /api/technicians` - Create technician
+- `GET /api/technicians/[id]` - Get technician
+- `PUT /api/technicians/[id]` - Update technician
+- `DELETE /api/technicians/[id]` - Delete technician
+
+#### Clients
+- `GET /api/clients` - List clients
+- `POST /api/clients` - Create client
+- `GET /api/clients/[id]` - Get client
+- `PUT /api/clients/[id]` - Update client
+- `DELETE /api/clients/[id]` - Delete client
+
+#### Service Types
+- `GET /api/service-types` - List service types
+- `POST /api/service-types` - Create service type
+- `GET /api/service-types/[id]` - Get service type
+- `PUT /api/service-types/[id]` - Update service type
+- `DELETE /api/service-types/[id]` - Delete service type
+
+#### Equipment
+- `GET /api/equipment` - List equipment
+- `POST /api/equipment` - Create equipment
+- `GET /api/equipment/[id]` - Get equipment
+- `PUT /api/equipment/[id]` - Update equipment
+- `DELETE /api/equipment/[id]` - Delete equipment
+
+#### Assignments
+- `GET /api/assignments` - List assignments
+- `POST /api/assignments` - Create assignment
+- `GET /api/assignments/[id]` - Get assignment
+- `PUT /api/assignments/[id]` - Update assignment
+- `DELETE /api/assignments/[id]` - Delete assignment
+- `GET /api/assignments/[id]/pdf` - Generate PDF
+
+## 🔒 Security Features
+
+- Password hashing with bcrypt
+- Token-based authentication
+- Input validation and sanitization
+- SQL injection prevention with Prisma ORM
+- XSS protection with proper output escaping
+
+## 🚀 Production Deployment
+
+### Environment Variables
+Create `.env.local` file:
+```env
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="your-secret-key"
+```
+
+### Database Migration
+For production, consider upgrading to PostgreSQL:
+1. Update `prisma/schema.prisma` provider
+2. Update `DATABASE_URL` environment variable
+3. Run `npx prisma migrate deploy`
+
+### Build and Deploy
+```bash
 npm run build
-
-# Start production server
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see your application running.
+## 📈 Scalability Considerations
 
-## 🤖 Powered by Z.ai
+- **Database**: Easily upgrade from SQLite to PostgreSQL/MySQL
+- **Authentication**: Can be extended to NextAuth.js for social logins
+- **File Storage**: Can integrate with cloud storage for documentation
+- **Notifications**: Can add email/SMS notifications
+- **Invoicing**: Can extend to client billing system
+- **Reporting**: Can add advanced analytics and reporting
 
-This scaffold is optimized for use with [Z.ai](https://chat.z.ai) - your AI assistant for:
+## 🤝 Contributing
 
-- **💻 Code Generation** - Generate components, pages, and features instantly
-- **🎨 UI Development** - Create beautiful interfaces with AI assistance  
-- **🔧 Bug Fixing** - Identify and resolve issues with intelligent suggestions
-- **📝 Documentation** - Auto-generate comprehensive documentation
-- **🚀 Optimization** - Performance improvements and best practices
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-Ready to build something amazing? Start chatting with Z.ai at [chat.z.ai](https://chat.z.ai) and experience the future of AI-powered development!
+## 📞 Support
 
-## 📁 Project Structure
+For technical support or questions:
+- Email: support@clasnet.com
+- Phone: +62 286 123456
 
-```
-src/
-├── app/                 # Next.js App Router pages
-├── components/          # Reusable React components
-│   └── ui/             # shadcn/ui components
-├── hooks/              # Custom React hooks
-└── lib/                # Utility functions and configurations
-```
+## 📄 License
 
-## 🎨 Available Features & Components
-
-This scaffold includes a comprehensive set of modern web development tools:
-
-### 🧩 UI Components (shadcn/ui)
-- **Layout**: Card, Separator, Aspect Ratio, Resizable Panels
-- **Forms**: Input, Textarea, Select, Checkbox, Radio Group, Switch
-- **Feedback**: Alert, Toast (Sonner), Progress, Skeleton
-- **Navigation**: Breadcrumb, Menubar, Navigation Menu, Pagination
-- **Overlay**: Dialog, Sheet, Popover, Tooltip, Hover Card
-- **Data Display**: Badge, Avatar, Calendar
-
-### 📊 Advanced Data Features
-- **Tables**: Powerful data tables with sorting, filtering, pagination (TanStack Table)
-- **Charts**: Beautiful visualizations with Recharts
-- **Forms**: Type-safe forms with React Hook Form + Zod validation
-
-### 🎨 Interactive Features
-- **Animations**: Smooth micro-interactions with Framer Motion
-- **Drag & Drop**: Modern drag-and-drop functionality with DND Kit
-- **Theme Switching**: Built-in dark/light mode support
-
-### 🔐 Backend Integration
-- **Authentication**: Ready-to-use auth flows with NextAuth.js
-- **Database**: Type-safe database operations with Prisma
-- **API Client**: HTTP requests with Axios + TanStack Query
-- **State Management**: Simple and scalable with Zustand
-
-### 🌍 Production Features
-- **Internationalization**: Multi-language support with Next Intl
-- **Image Optimization**: Automatic image processing with Sharp
-- **Type Safety**: End-to-end TypeScript with Zod validation
-- **Essential Hooks**: 100+ useful React hooks with ReactUse for common patterns
-
-## 🤝 Get Started with Z.ai
-
-1. **Clone this scaffold** to jumpstart your project
-2. **Visit [chat.z.ai](https://chat.z.ai)** to access your AI coding assistant
-3. **Start building** with intelligent code generation and assistance
-4. **Deploy with confidence** using the production-ready setup
+This project is proprietary to Clasnet Group. All rights reserved.
 
 ---
 
-Built with ❤️ for the developer community. Supercharged by [Z.ai](https://chat.z.ai) 🚀
+**Clasnet Group**  
+*Empowering technician management excellence since 2024*
