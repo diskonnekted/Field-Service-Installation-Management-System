@@ -1,256 +1,195 @@
-# Clasnet Group - Technician Assignment Management System
+# Service Management System
 
-A comprehensive web-based system for managing technician assignments, designed specifically for Clasnet Group in Banjarnegara, Indonesia.
+Sistem manajemen layanan yang komprehensif untuk mengelola penugasan teknisi, klien, dan pelaporan menggunakan Next.js 15, TypeScript, Prisma, dan PostgreSQL.
 
-## Company Information
-**Clasnet Group**  
-Jl. Serulingmas No. 32, Banjarnegara, Indonesia  
-Phone: +62 286 123456
+## 🚀 Fitur Utama
 
-## Features
+### 📊 Dashboard
+- Statistik overview penugasan
+- Monitoring status pekerjaan
+- Visualisasi data dengan grafik
 
-### Core Functionality
-- **Technician Management**: Manage freelance and permanent technicians with expertise tracking
-- **Client Management**: Comprehensive client portfolio management
-- **Service Management**: Define service types and categories
-- **Equipment Inventory**: Track equipment stock and availability
-- **Assignment System**: Create and manage service assignments with multi-technician support
-- **PDF Generation**: Generate professional documents (Work Order, Completion Report, Payment Receipt)
-- **Dashboard**: Real-time overview of operations and statistics
-- **Search & Filter**: Advanced filtering across all modules
+### 👥 Manajemen Teknisi
+- CRUD teknisi lengkap
+- Informasi kontak dan keahlian
+- Kategori teknisi (Senior/Junior)
 
-### Document Generation
-- **Surat Perintah Kerja (Work Order)**: Professional work assignment letters
-- **Berita Acara Serah Terima (Completion Report)**: Service completion documentation
-- **Kwitansi (Payment Receipt)**: Technician payment documentation
+### 🏢 Manajemen Klien
+- Database klien terpusat
+- Informasi kontak dan alamat
+- Riwayat penugasan
 
-## Technology Stack
+### 🛠️ Manajemen Layanan
+- Jenis layanan dan kategori
+- Peralatan yang dibutuhkan
+- Deskripsi layanan detail
 
-- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, shadcn/ui
-- **Backend**: Next.js API Routes with Prisma ORM
-- **Database**: SQLite (development ready, easily upgradable to PostgreSQL/MySQL)
-- **Authentication**: Simple token-based authentication
-- **PDF Generation**: jsPDF with html2canvas
-- **UI Components**: shadcn/ui component library
+### 📋 Manajemen Penugasan
+- Pembuatan dan penjadwalan penugasan
+- Assign teknisi utama dan asisten
+- Tracking status pekerjaan
+- Perhitungan biaya otomatis
 
-## Prerequisites
+### 📄 Generate PDF
+- **Surat Tugas (Work Order)**
+- **Berita Acara Serah Terima**
+- **Tagihan Pembayaran**
+- Download langsung dari browser
 
-- Node.js 18+ 
-- npm or yarn
-- Git
+## 🛠️ Teknologi
 
-## Quick Start
+- **Frontend**: Next.js 15 dengan App Router
+- **Backend**: Next.js API Routes
+- **Database**: PostgreSQL dengan Prisma ORM
+- **UI**: Tailwind CSS + shadcn/ui
+- **Authentication**: NextAuth.js
+- **PDF Generation**: jsPDF
+- **State Management**: Zustand
+- **TypeScript**: Full type safety
 
-### 1. Clone and Install
+## 📦 Instalasi
+
 ```bash
-git clone https://github.com/diskonnekted/Field-Service-Installation-Management-System.git
-cd Field-Service-Installation-Management-System
+# Clone repository
+git clone https://github.com/username/service-management-system.git
+cd service-management-system
+
+# Install dependencies
 npm install
-```
 
-### 2. Database Setup
-```bash
-# Push database schema
+# Setup database
 npm run db:push
 
-# Seed admin user
-npx tsx src/lib/seed-admin.ts
-```
+# Seed data admin
+npm run db:seed
 
-### 3. Start Development Server
-```bash
+# Jalankan development server
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`
+Buka [http://localhost:3000](http://localhost:3000) untuk mengakses aplikasi.
 
-## Default Login Credentials
+## 🔐 Login Default
 
-- **Email**: admin@clasnet.com
-- **Password**: admin123
+- **Username**: `admin`
+- **Password**: `admin123`
 
-## Database Schema
+## 📁 Struktur Proyek
 
-### Core Entities
-- **Admin**: System administrators
-- **Technicians**: Freelance and permanent technicians
-- **Clients**: Service clients
-- **Service Types**: Available services with categories
-- **Service Equipment**: Equipment inventory
-- **Service Cost Templates**: Cost structures for technician payments
-- **Assignments**: Main assignment entity with relationships
-- **Assignment Assistants**: Many-to-many for assistant technicians
-- **Assignment Equipment**: Equipment used in assignments
-
-### Key Features
-- **Freelance Focus**: Primary support for freelance technicians
-- **Cost Tracking**: Internal cost management (not client billing)
-- **Multi-technician Support**: Lead technician + assistants
-- **Equipment Management**: Stock tracking and assignment
-- **Documentation**: Photo/file path support
-
-## Usage Guide
-
-### 1. Initial Setup
-1. Login with default credentials
-2. Navigate to "Layanan & Peralatan" tab
-3. Add your service types and equipment inventory
-4. Add technicians (freelance/permanent) with their expertise
-5. Add clients to your portfolio
-
-### 2. Creating Assignments
-1. Go to "Manajemen Penugasan" tab
-2. Click "Penugasan Baru"
-3. Select client, service type, and lead technician (PIC)
-4. Add assistant technicians if needed
-5. Select required equipment with quantities
-6. Set dates and total cost
-7. Add notes and create assignment
-
-### 3. Managing Assignments
-- View all assignments in the management interface
-- Filter by status, client, or service type
-- Update assignment status as work progresses
-- Generate PDF documents at any stage
-
-### 4. PDF Generation
-From any assignment, you can generate:
-- **Work Order**: Initial assignment document
-- **Completion Report**: Service completion documentation
-- **Payment Receipt**: Technician payment breakdown
-
-## Development
-
-### Project Structure
 ```
 src/
-├── app/                    # Next.js app router
-│   ├── api/               # API routes
-│   │   ├── assignments/   # Assignment CRUD
-│   │   ├── technicians/   # Technician CRUD
-│   │   ├── clients/       # Client CRUD
-│   │   ├── service-types/ # Service type CRUD
-│   │   ├── equipment/     # Equipment CRUD
-│   │   ├── dashboard/     # Dashboard stats
-│   │   └── auth/          # Authentication
-│   └── page.tsx           # Main application page
-├── components/            # React components
+├── app/                    # Next.js App Router
+│   ├── api/               # API Routes
+│   ├── assignments/       # Assignment pages
+│   ├── dashboard/         # Dashboard page
+│   └── layout.tsx         # Root layout
+├── components/            # React Components
 │   ├── ui/               # shadcn/ui components
-│   ├── technician-management.tsx
-│   ├── client-management.tsx
 │   ├── assignment-management.tsx
-│   ├── service-management.tsx
-│   └── login.tsx
-├── lib/                  # Utilities
-│   ├── db.ts            # Prisma client
-│   ├── pdf-service.ts   # PDF generation
-│   ├── utils.ts         # Helper functions
-│   └── seed-admin.ts    # Admin seeding
-└── prisma/
-    └── schema.prisma    # Database schema
+│   ├── technician-management.tsx
+│   └── client-management.tsx
+├── lib/                   # Utilities
+│   ├── db.ts             # Prisma client
+│   ├── pdf-service.ts    # PDF generation
+│   └── utils.ts          # Helper functions
+└── hooks/                 # Custom React hooks
 ```
 
-### API Endpoints
+## 🗄️ Database Schema
 
-#### Authentication
-- `POST /api/auth/login` - Admin login
+### Tables:
+- `technicians` - Data teknisi
+- `clients` - Data klien
+- `service_types` - Jenis layanan
+- `service_equipment` - Peralatan
+- `assignments` - Penugasan
+- `assignment_assistants` - Asisten teknisi
+- `assignment_equipment` - Peralatan penugasan
 
-#### Dashboard
-- `GET /api/dashboard/stats` - Dashboard statistics
+## 📊 API Endpoints
 
-#### Technicians
-- `GET /api/technicians` - List technicians
-- `POST /api/technicians` - Create technician
-- `GET /api/technicians/[id]` - Get technician
-- `PUT /api/technicians/[id]` - Update technician
-- `DELETE /api/technicians/[id]` - Delete technician
+### Authentication
+- `POST /api/auth/login` - Login admin
 
-#### Clients
-- `GET /api/clients` - List clients
-- `POST /api/clients` - Create client
-- `GET /api/clients/[id]` - Get client
-- `PUT /api/clients/[id]` - Update client
-- `DELETE /api/clients/[id]` - Delete client
+### Technicians
+- `GET /api/technicians` - List teknisi
+- `POST /api/technicians` - Tambah teknisi
+- `PUT /api/technicians/[id]` - Update teknisi
+- `DELETE /api/technicians/[id]` - Hapus teknisi
 
-#### Service Types
-- `GET /api/service-types` - List service types
-- `POST /api/service-types` - Create service type
-- `GET /api/service-types/[id]` - Get service type
-- `PUT /api/service-types/[id]` - Update service type
-- `DELETE /api/service-types/[id]` - Delete service type
+### Clients
+- `GET /api/clients` - List klien
+- `POST /api/clients` - Tambah klien
+- `PUT /api/clients/[id]` - Update klien
+- `DELETE /api/clients/[id]` - Hapus klien
 
-#### Equipment
-- `GET /api/equipment` - List equipment
-- `POST /api/equipment` - Create equipment
-- `GET /api/equipment/[id]` - Get equipment
-- `PUT /api/equipment/[id]` - Update equipment
-- `DELETE /api/equipment/[id]` - Delete equipment
-
-#### Assignments
-- `GET /api/assignments` - List assignments
-- `POST /api/assignments` - Create assignment
-- `GET /api/assignments/[id]` - Get assignment
-- `PUT /api/assignments/[id]` - Update assignment
-- `DELETE /api/assignments/[id]` - Delete assignment
+### Assignments
+- `GET /api/assignments` - List penugasan
+- `POST /api/assignments` - Tambah penugasan
+- `PUT /api/assignments/[id]` - Update penugasan
+- `DELETE /api/assignments/[id]` - Hapus penugasan
 - `GET /api/assignments/[id]/pdf` - Generate PDF
 
-## Security Features
+### Service Types & Equipment
+- `GET /api/service-types` - List jenis layanan
+- `GET /api/equipment` - List peralatan
 
-- Password hashing with bcrypt
-- Token-based authentication
-- Input validation and sanitization
-- SQL injection prevention with Prisma ORM
-- XSS protection with proper output escaping
+### Dashboard
+- `GET /api/dashboard/stats` - Statistik dashboard
 
-## Production Deployment
+## 🎨 Fitur UI/UX
 
-### Environment Variables
-Create `.env.local` file:
-```env
-DATABASE_URL="file:./dev.db"
-NEXTAUTH_SECRET="your-secret-key"
-```
+- **Responsive Design**: Mobile-friendly
+- **Dark Mode Support**: Tema terang/gelap
+- **Loading States**: Indikator loading
+- **Error Handling**: Pesan error yang jelas
+- **Search & Filter**: Pencarian data
+- **Pagination**: Navigasi data
+- **Toast Notifications**: Feedback interaksi
 
-### Database Migration
-For production, consider upgrading to PostgreSQL:
-1. Update `prisma/schema.prisma` provider
-2. Update `DATABASE_URL` environment variable
-3. Run `npx prisma migrate deploy`
+## 🔧 Development
 
-### Build and Deploy
 ```bash
+# Run development server
+npm run dev
+
+# Build for production
 npm run build
+
+# Start production server
 npm start
+
+# Run linting
+npm run lint
+
+# Database operations
+npm run db:push      # Push schema changes
+npm run db:generate  # Generate Prisma client
+npm run db:migrate   # Run migrations
+npm run db:reset     # Reset database
 ```
 
-## Scalability Considerations
+## 📝 Notes
 
-- **Database**: Easily upgrade from SQLite to PostgreSQL/MySQL
-- **Authentication**: Can be extended to NextAuth.js for social logins
-- **File Storage**: Can integrate with cloud storage for documentation
-- **Notifications**: Can add email/SMS notifications
-- **Invoicing**: Can extend to client billing system
-- **Reporting**: Can add advanced analytics and reporting
+- Sistem menggunakan bahasa Indonesia untuk interface
+- PDF generate langsung di browser tanpa server-side rendering
+- Auto-calculation untuk biaya penugasan
+- Real-time updates dengan Socket.IO (opsional)
 
-## Contributing
+## 🤝 Kontribusi
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+1. Fork repository
+2. Buat branch feature (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
-## Support
+## 📄 License
 
-For technical support or questions:
-- Email: support@clasnet.com
-- Phone: +62 286 123456
+MIT License - lihat file [LICENSE](LICENSE) untuk detail
 
-## License
-
-This project is proprietary to Clasnet Group. All rights reserved.
-
----
+## 👥 Author
 
 **Clasnet Group**  
-*Empowering technician management excellence since 2024*
+Jl. Serulingmas No. 32, Banjarnegara, Indonesia  
+Telepon: +62 286 123456
