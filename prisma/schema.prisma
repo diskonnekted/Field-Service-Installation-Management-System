@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Admin user for system management
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Technicians (both freelance and permanent)
+model Technician {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  address   String
+  type      TechnicianType @default(FREELANCE)
+  expertise String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  leadAssignments Assignment[] @relation("LeadTechnician")
+  assistantAssignments AssignmentAssistant[]
+  serviceCostTemplates ServiceCostTemplate[]
+
+  @@map("technicians")
+}
+
+enum TechnicianType {
+  FREELANCE
+  PERMANENT
+}
+
+// Clients
+model Client {
+  id            String   @id @default(cuid())
+  name          String
+  contactPerson String?
+  phone         String
+  address       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  assignments Assignment[]
+
+  @@map("clients")
+}
+
+// Service Types
+model ServiceType {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  assignments Assignment[]
+  serviceCostTemplates ServiceCostTemplate[]
+
+  @@map("service_types")
+}
+
+// Service Equipment
+model ServiceEquipment {
+  id            String   @id @default(cuid())
+  name          String
+  unit          String   @default("unit")
+  stockQuantity Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  assignmentEquipment AssignmentEquipment[]
+
+  @@map("service_equipment")
+}
+
+// Service Cost Templates (costs paid to technicians)
+model ServiceCostTemplate {
+  id                      String   @id @default(cuid())
+  serviceTypeId           String
+  technicianId            String
+  technicianFee           Float
+  transportCost           Float    @default(0)
+  accommodation           Float    @default(0)
+  incidentalEquipmentCost Float    @default(0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id], onDelete: Cascade)
+  technician Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceTypeId, technicianId])
+  @@map("service_cost_templates")
+}
+
+// Assignments (core feature)
+model Assignment {
+  id                String         @id @default(cuid())
+  clientId          String
+  serviceTypeId     String
+  leadTechnicianId  String
+  startDate         DateTime
+  endDate           DateTime
+  status            AssignmentStatus @default(PENDING)
+  notes             String?
+  documentation     String? // JSON array of file paths
+  totalCost         Float          @default(0)
+  manualCostOverride Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  client          Client          @relation(fields: [clientId], references: [id])
+  serviceType     ServiceType     @relation(fields: [serviceTypeId], references: [id])
+  leadTechnician  Technician      @relation("LeadTechnician", fields: [leadTechnicianId], references: [id])
+  assistants      AssignmentAssistant[]
+  equipment       AssignmentEquipment[]
+
+  @@map("assignments")
+}
+
+enum AssignmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Assignment Assistants (many-to-many relationship)
+model AssignmentAssistant {
+  id           String @id @default(cuid())
+  assignmentId String
+  technicianId String
+
+  // Relations
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  technician Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, technicianId])
+  @@map("assignment_assistants")
+}
+
+// Assignment Equipment (many-to-many with quantity)
+model AssignmentEquipment {
+  id           String @id @default(cuid())
+  assignmentId String
+  equipmentId  String
+  quantity     Int    @default(1)
+
+  // Relations
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  equipment  ServiceEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, equipmentId])
+  @@map("assignment_equipment")
+}
