@@ -91,11 +91,15 @@ export async function GET(
     }
 
     // Return PDF as downloadable file
+    console.log(`Generated PDF buffer of size: ${pdfBuffer.length} bytes for ${filename}`)
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': pdfBuffer.length.toString(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     })
 

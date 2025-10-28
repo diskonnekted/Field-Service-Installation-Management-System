@@ -228,6 +228,11 @@ export default function AssignmentManagement() {
         // Get blob from response
         const blob = await response.blob()
         
+        // Check if blob is valid
+        if (blob.size === 0) {
+          throw new Error('Generated PDF is empty')
+        }
+        
         // Create download link
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -250,16 +255,7 @@ export default function AssignmentManagement() {
       } else {
         const errorData = await response.json()
         console.error('Failed to generate PDF:', errorData)
-        
-        // Show error message
-        if (button) {
-          button.innerHTML = '❌ Gagal'
-          setTimeout(() => {
-            button.disabled = false
-            const originalText = button.getAttribute('data-original-text')
-            button.innerHTML = originalText || 'Download'
-          }, 2000)
-        }
+        throw new Error(errorData.error || 'Failed to generate PDF')
       }
     } catch (error) {
       console.error('Error generating PDF:', error)
@@ -267,13 +263,16 @@ export default function AssignmentManagement() {
       // Show error message
       const button = event?.currentTarget as HTMLButtonElement
       if (button) {
-        button.innerHTML = '❌ Error'
+        button.innerHTML = '❌ Gagal'
         setTimeout(() => {
           button.disabled = false
           const originalText = button.getAttribute('data-original-text')
           button.innerHTML = originalText || 'Download'
         }, 2000)
       }
+      
+      // Optionally show toast notification
+      // toast.error(`Gagal mengunduh PDF: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
