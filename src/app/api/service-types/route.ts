@@ -36,13 +36,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, category, description } = body
+    const { name, category, description, price } = body
 
     const serviceType = await db.serviceType.create({
       data: {
         name,
         category,
-        description
+        description,
+        price: price ? parseFloat(price) : null
       }
     })
 

@@ -64,7 +64,7 @@ export default function Login({ onLogin }: LoginProps) {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2">
               <Lock className="h-5 w-5" />
-              Login Administrator
+              Login Sistem
             </CardTitle>
             <CardDescription>
               Masukkan kredensial Anda untuk mengakses sistem
@@ -85,7 +85,7 @@ export default function Login({ onLogin }: LoginProps) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@clasnet.com"
+                  placeholder="admin@clasnet.co.id"
                   required
                 />
               </div>
@@ -122,12 +122,7 @@ export default function Login({ onLogin }: LoginProps) {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-gray-500">
-              <p>Kredensial default:</p>
-              <p>Email: admin@clasnet.com</p>
-              <p>Kata Sandi: admin123</p>
-            </div>
-          </CardContent>
+            </CardContent>
         </Card>
       </div>
     </div>

@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
     const search = searchParams.get('search')
+    const available = searchParams.get('available')
 
     const where: any = {}
     if (type) where.type = type
@@ -15,6 +16,13 @@ export async function GET(request: NextRequest) {
         { phone: { contains: search, mode: 'insensitive' } },
         { expertise: { contains: search, mode: 'insensitive' } }
       ]
+    }
+
+    // Handle available parameter - for now, all technicians are considered available
+    // This parameter can be used later to filter technicians based on availability status
+    if (available === 'true') {
+      // Currently all technicians are available for user assignment
+      // In the future, you might want to add logic to filter by active status, current assignments, etc.
     }
 
     const technicians = await db.technician.findMany({

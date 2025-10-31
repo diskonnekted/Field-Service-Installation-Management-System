@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Edit, Trash2, Search, Calendar, Users, Wrench, Download, Eye, FileText } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, Calendar, Users, Wrench, Download, Eye, FileText, AlertCircle, Calculator, Loader2, AlertTriangle } from 'lucide-react'
+import { calculateAutomatedPayment, formatCurrency, generatePaymentDescription, PaymentCalculation } from '@/lib/payment-calculator'
 
 interface Assignment {
   id: string
@@ -26,6 +27,14 @@ interface Assignment {
   notes?: string
   totalCost: number
   manualCostOverride: boolean
+  workLocation?: string
+  latitude?: number
+  longitude?: number
+}
+
+interface AssignmentManagementProps {
+  triggerNewAssignment?: boolean
+  onTriggeredNewAssignment?: () => void
 }
 
 interface Client {
@@ -36,6 +45,7 @@ interface Client {
 interface ServiceType {
   id: string
   name: string
+  price?: number | null
 }
 
 interface Technician {
@@ -51,7 +61,10 @@ interface Equipment {
   stockQuantity: number
 }
 
-export default function AssignmentManagement() {
+export default function AssignmentManagement({
+  triggerNewAssignment = false,
+  onTriggeredNewAssignment
+}: AssignmentManagementProps) {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
@@ -61,7 +74,13 @@ export default function AssignmentManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null)
+  const [viewingAssignment, setViewingAssignment] = useState<Assignment | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [assignmentToDelete, setAssignmentToDelete] = useState<Assignment | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [paymentCalculationDialogOpen, setPaymentCalculationDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
     clientId: '',
     serviceTypeId: '',
@@ -71,6 +90,9 @@ export default function AssignmentManagement() {
     notes: '',
     totalCost: '',
     manualCostOverride: false,
+    workLocation: '',
+    latitude: '',
+    longitude: '',
     assistantIds: [] as string[],
     equipment: [] as Array<{ equipmentId: string; quantity: number }>
   })
@@ -82,6 +104,14 @@ export default function AssignmentManagement() {
     fetchTechnicians()
     fetchEquipment()
   }, [searchTerm, filterStatus])
+
+  useEffect(() => {
+    if (triggerNewAssignment) {
+      setIsDialogOpen(true)
+      resetForm()
+      onTriggeredNewAssignment?.()
+    }
+  }, [triggerNewAssignment, onTriggeredNewAssignment])
 
   const fetchAssignments = async () => {
     try {
@@ -139,11 +169,48 @@ export default function AssignmentManagement() {
     }
   }
 
+  // Automated Payment Calculation Function
+  const calculateAssignmentCost = (): PaymentCalculation | null => {
+    // Find selected service type
+    const selectedServiceType = serviceTypes.find(st => st.id === formData.serviceTypeId)
+    if (!selectedServiceType) return null
+
+    // Count technicians (lead + assistants)
+    const assistantCount = formData.assistantIds.length
+
+    // Calculate payment
+    const calculation = calculateAutomatedPayment({
+      serviceTypePrice: selectedServiceType.price,
+      leadTechnicianCount: 1, // Always 1 lead technician
+      assistantCount: assistantCount,
+      accommodationCosts: 0 // Can be extended later
+    })
+
+    return calculation
+  }
+
+  // Auto-update total cost when service type or technicians change
+  useEffect(() => {
+    if (!formData.manualCostOverride) {
+      const calculation = calculateAssignmentCost()
+      if (calculation) {
+        setFormData(prev => ({
+          ...prev,
+          totalCost: calculation.totalCost.toString()
+        }))
+      }
+    }
+  }, [formData.serviceTypeId, formData.assistantIds, formData.manualCostOverride])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await fetch('/api/assignments', {
-        method: 'POST',
+      const isEdit = editingAssignment !== null
+      const url = isEdit ? `/api/assignments/${editingAssignment.id}` : '/api/assignments'
+      const method = isEdit ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -154,9 +221,13 @@ export default function AssignmentManagement() {
         await fetchAssignments()
         setIsDialogOpen(false)
         resetForm()
+      } else {
+        const errorData = await response.json()
+        alert(`Gagal ${isEdit ? 'memperbarui' : 'menyimpan'} assignment: ${errorData.error || 'Terjadi kesalahan'}`)
       }
     } catch (error) {
       console.error('Error saving assignment:', error)
+      alert(`Gagal ${editingAssignment ? 'memperbarui' : 'menyimpan'} assignment. Silakan coba lagi.`)
     }
   }
 
@@ -202,6 +273,9 @@ export default function AssignmentManagement() {
       notes: '',
       totalCost: '',
       manualCostOverride: false,
+      workLocation: '',
+      latitude: '',
+      longitude: '',
       assistantIds: [],
       equipment: []
     })
@@ -215,55 +289,41 @@ export default function AssignmentManagement() {
       if (button) {
         button.disabled = true
         const originalText = button.textContent || ''
-        button.innerHTML = '<span class="animate-spin">⏳</span> Mengunduh...'
-        
+        button.innerHTML = '<span class="animate-spin">⏳</span> Membuka...'
+
         // Store original text
         button.setAttribute('data-original-text', originalText)
       }
 
-      // Create download link
-      const response = await fetch(`/api/assignments/${assignmentId}/pdf?type=${type}`)
-      
-      if (response.ok) {
-        // Get blob from response
-        const blob = await response.blob()
-        
-        // Create download link
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = getFilename(type, assignmentId)
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-        
-        // Show success message
-        if (button) {
-          button.innerHTML = '✅ Berhasil'
-          setTimeout(() => {
-            button.disabled = false
-            const originalText = button.getAttribute('data-original-text')
-            button.innerHTML = originalText || 'Download'
-          }, 2000)
-        }
-      } else {
-        const errorData = await response.json()
-        console.error('Failed to generate PDF:', errorData)
-        
-        // Show error message
-        if (button) {
-          button.innerHTML = '❌ Gagal'
-          setTimeout(() => {
-            button.disabled = false
-            const originalText = button.getAttribute('data-original-text')
-            button.innerHTML = originalText || 'Download'
-          }, 2000)
-        }
+      // Check if assignment exists first
+      const assignmentResponse = await fetch(`/api/assignments/${assignmentId}`)
+      if (!assignmentResponse.ok) {
+        throw new Error('Assignment not found')
+      }
+
+      // Open document in new tab
+      const documentUrl = `/api/assignments/${assignmentId}/pdf?type=${type}`
+      const newWindow = window.open(documentUrl, '_blank')
+
+      // Check if popup was blocked
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        // Fallback: redirect to document in same tab
+        window.location.href = documentUrl
+        return
+      }
+
+      // Show success message
+      if (button) {
+        button.innerHTML = '✅ Dibuka'
+        setTimeout(() => {
+          button.disabled = false
+          const originalText = button.getAttribute('data-original-text')
+          button.innerHTML = originalText || 'Buka'
+        }, 2000)
       }
     } catch (error) {
-      console.error('Error generating PDF:', error)
-      
+      console.error('Error opening document:', error)
+
       // Show error message
       const button = event?.currentTarget as HTMLButtonElement
       if (button) {
@@ -271,22 +331,135 @@ export default function AssignmentManagement() {
         setTimeout(() => {
           button.disabled = false
           const originalText = button.getAttribute('data-original-text')
-          button.innerHTML = originalText || 'Download'
+          button.innerHTML = originalText || 'Buka'
         }, 2000)
       }
+
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to open document'
+      alert(`Gagal membuka dokumen: ${errorMessage}. Silakan coba lagi.`)
+    }
+  }
+
+  const handleViewDetails = (assignment: Assignment) => {
+    setViewingAssignment(assignment)
+    setIsDetailDialogOpen(true)
+  }
+
+  const handleEditClick = (assignment: Assignment) => {
+    setEditingAssignment(assignment)
+    setFormData({
+      clientId: assignment.client.id,
+      serviceTypeId: assignment.serviceType.id,
+      leadTechnicianId: assignment.leadTechnician.id,
+      startDate: assignment.startDate.split('T')[0],
+      endDate: assignment.endDate.split('T')[0],
+      notes: assignment.notes || '',
+      totalCost: assignment.totalCost.toString(),
+      manualCostOverride: assignment.manualCostOverride,
+      workLocation: assignment.workLocation || '',
+      latitude: assignment.latitude?.toString() || '',
+      longitude: assignment.longitude?.toString() || '',
+      assistantIds: assignment.assistants.map(a => a.technician.id),
+      equipment: assignment.equipment.map(e => ({
+        equipmentId: e.equipment.id,
+        quantity: e.quantity
+      }))
+    })
+    setIsDialogOpen(true)
+  }
+
+  const handleDeleteClick = (assignment: Assignment) => {
+    setAssignmentToDelete(assignment)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!assignmentToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/assignments/${assignmentToDelete.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const responseData = await response.json()
+
+        // Remove from local state
+        setAssignments(prev => prev.filter(a => a.id !== assignmentToDelete.id))
+
+        // Show success message with cascade info
+        alert(`✅ Penugasan "${assignmentToDelete.client.name} - ${assignmentToDelete.serviceType.name}" berhasil dihapus\n\n${responseData.message || 'Semua data terkait (laporan, foto, asisten, peralatan, riwayat kerja) juga telah dihapus.'}`)
+
+        // Close dialog and reset
+        setDeleteDialogOpen(false)
+        setAssignmentToDelete(null)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete assignment')
+      }
+    } catch (error) {
+      console.error('Error deleting assignment:', error)
+      alert(`Gagal menghapus penugasan: ${(error as Error).message}. Silakan coba lagi.`)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false)
+    setAssignmentToDelete(null)
+  }
+
+  const handleStatusChange = async (assignmentId: string, newStatus: string) => {
+    try {
+      const assignment = assignments.find(a => a.id === assignmentId)
+      if (!assignment) return
+
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientId: assignment.client.id,
+          serviceTypeId: assignment.serviceType.id,
+          leadTechnicianId: assignment.leadTechnician.id,
+          startDate: assignment.startDate,
+          endDate: assignment.endDate,
+          status: newStatus,
+          notes: assignment.notes || '',
+          totalCost: assignment.totalCost.toString(),
+          manualCostOverride: assignment.manualCostOverride,
+          assistantIds: assignment.assistants.map(a => a.technician.id),
+          equipment: assignment.equipment.map(e => ({
+            equipmentId: e.equipment.id,
+            quantity: e.quantity
+          }))
+        }),
+      })
+
+      if (response.ok) {
+        await fetchAssignments()
+      } else {
+        console.error('Failed to update assignment status')
+      }
+    } catch (error) {
+      console.error('Error updating assignment status:', error)
     }
   }
 
   const getFilename = (type: string, assignmentId: string): string => {
     switch (type) {
       case 'work-order':
-        return `surat-tugas-${assignmentId}.pdf`
+        return `surat-tugas-${assignmentId}.html`
       case 'completion-report':
-        return `berita-acara-${assignmentId}.pdf`
+        return `berita-acara-${assignmentId}.html`
       case 'payment-receipt':
-        return `tagihan-${assignmentId}.pdf`
+        return `tagihan-${assignmentId}.html`
       default:
-        return `document-${assignmentId}.pdf`
+        return `document-${assignmentId}.html`
     }
   }
 
@@ -326,14 +499,14 @@ export default function AssignmentManagement() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button onClick={resetForm} data-testid="new-assignment-button">
               <Plus className="h-4 w-4 mr-2" />
               New Assignment
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create New Assignment</DialogTitle>
+              <DialogTitle>{editingAssignment ? 'Edit Assignment' : 'Create New Assignment'}</DialogTitle>
               <DialogDescription>
                 Assign technicians to service jobs for clients
               </DialogDescription>
@@ -452,15 +625,44 @@ export default function AssignmentManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="totalCost">Total Cost (IDR)</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="totalCost">Total Cost (IDR)</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPaymentCalculationDialogOpen(true)}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      <Calculator className="h-3 w-3 mr-1" />
+                      Calculate
+                    </Button>
+                    <Badge
+                      variant={formData.manualCostOverride ? "secondary" : "default"}
+                      className="text-xs"
+                    >
+                      {formData.manualCostOverride ? "Manual" : "Auto"}
+                    </Badge>
+                  </div>
+                </div>
                 <Input
                   id="totalCost"
                   type="number"
                   step="0.01"
                   value={formData.totalCost}
-                  onChange={(e) => setFormData({ ...formData, totalCost: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      totalCost: e.target.value,
+                      manualCostOverride: true // Mark as manual override when user changes it
+                    })
+                  }}
                   placeholder="Auto-calculated or manual override"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Cost is auto-calculated based on service fee × number of technicians
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -473,15 +675,197 @@ export default function AssignmentManagement() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="workLocation">Lokasi Pekerjaan</Label>
+                <Textarea
+                  id="workLocation"
+                  value={formData.workLocation}
+                  onChange={(e) => setFormData({ ...formData, workLocation: e.target.value })}
+                  placeholder="Alamat lengkap lokasi pekerjaan"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Koordinat Lokasi (GPS)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="latitude" className="text-xs text-gray-500">Latitude</Label>
+                    <Input
+                      id="latitude"
+                      type="number"
+                      step="any"
+                      value={formData.latitude}
+                      onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                      placeholder="Contoh: -7.7956"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="longitude" className="text-xs text-gray-500">Longitude</Label>
+                    <Input
+                      id="longitude"
+                      type="number"
+                      step="any"
+                      value={formData.longitude}
+                      onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                      placeholder="Contoh: 110.3695"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Opsional: Masukkan koordinat GPS lokasi pekerjaan untuk ditampilkan di peta
+                </p>
+              </div>
+
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit">
-                  Create Assignment
+                  {editingAssignment ? 'Update Assignment' : 'Create Assignment'}
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Detail View Dialog */}
+        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+          <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Assignment Details</DialogTitle>
+              <DialogDescription>
+                Complete information about this assignment
+              </DialogDescription>
+            </DialogHeader>
+            {viewingAssignment && (
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Client</Label>
+                    <p className="font-semibold">{viewingAssignment.client.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Service Type</Label>
+                    <p className="font-semibold">{viewingAssignment.serviceType.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Lead Technician (PIC)</Label>
+                    <p className="font-semibold">{viewingAssignment.leadTechnician.name} ({viewingAssignment.leadTechnician.type})</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Status</Label>
+                    <div className="mt-1">
+                      <Badge className={getStatusColor(viewingAssignment.status)}>
+                        {viewingAssignment.status.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Information */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Assignment Period</Label>
+                  <div className="mt-1 flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <p>{formatDate(viewingAssignment.startDate)} - {formatDate(viewingAssignment.endDate)}</p>
+                  </div>
+                </div>
+
+                {/* Assistant Technicians */}
+                {viewingAssignment.assistants.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Assistant Technicians</Label>
+                    <div className="mt-1 space-y-1">
+                      {viewingAssignment.assistants.map((assistant, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Users className="h-3 w-3 text-gray-400" />
+                          <span>{assistant.technician.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Equipment */}
+                {viewingAssignment.equipment.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Equipment Used</Label>
+                    <div className="mt-1 space-y-1">
+                      {viewingAssignment.equipment.map((item, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Wrench className="h-3 w-3 text-gray-400" />
+                          <span>{item.equipment.name} - {item.quantity} {item.equipment.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cost Information */}
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Total Cost</Label>
+                  <p className="text-lg font-semibold text-green-600">
+                    Rp {viewingAssignment.totalCost.toLocaleString('id-ID')}
+                  </p>
+                  {viewingAssignment.manualCostOverride && (
+                    <Badge variant="secondary" className="mt-1">
+                      Manual Cost Override
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {viewingAssignment.notes && (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Notes</Label>
+                    <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                      <p className="text-sm whitespace-pre-wrap">{viewingAssignment.notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-end space-x-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
+                    Close
+                  </Button>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleDownloadPDF(viewingAssignment.id, 'work-order', e)}
+                      title="Download Surat Tugas"
+                      data-original-text="Surat Tugas"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Surat Tugas
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleDownloadPDF(viewingAssignment.id, 'completion-report', e)}
+                      title="Download Berita Acara"
+                      data-original-text="Berita Acara"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Berita Acara
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleDownloadPDF(viewingAssignment.id, 'payment-receipt', e)}
+                      title="Download Tagihan"
+                      data-original-text="Tagihan"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Tagihan
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -558,9 +942,38 @@ export default function AssignmentManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(assignment.status)}>
-                      {assignment.status.replace('_', ' ')}
-                    </Badge>
+                    <Select
+                      value={assignment.status}
+                      onValueChange={(value) => handleStatusChange(assignment.id, value)}
+                    >
+                      <SelectTrigger className="w-32">
+                        <Badge className={getStatusColor(assignment.status)}>
+                          {assignment.status.replace('_', ' ')}
+                        </Badge>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PENDING">
+                          <Badge className="bg-yellow-100 text-yellow-800">
+                            Pending
+                          </Badge>
+                        </SelectItem>
+                        <SelectItem value="IN_PROGRESS">
+                          <Badge className="bg-blue-100 text-blue-800">
+                            In Progress
+                          </Badge>
+                        </SelectItem>
+                        <SelectItem value="COMPLETED">
+                          <Badge className="bg-green-100 text-green-800">
+                            Completed
+                          </Badge>
+                        </SelectItem>
+                        <SelectItem value="CANCELLED">
+                          <Badge className="bg-red-100 text-red-800">
+                            Cancelled
+                          </Badge>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm font-medium">
@@ -569,14 +982,46 @@ export default function AssignmentManagement() {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(assignment)}
+                      >
                         <Eye className="h-3 w-3 mr-1" />
                         Lihat
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClick(assignment)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(assignment)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Hapus
+                      </Button>
                       <div className="flex space-x-1">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.location.href = `/reports?assignmentId=${assignment.id}`}
+                          title="Lihat Laporan Terkait"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          Laporan
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => handleDownloadPDF(assignment.id, 'work-order', e)}
                           title="Download Surat Tugas"
                           data-original-text="Surat Tugas"
@@ -584,9 +1029,9 @@ export default function AssignmentManagement() {
                           <FileText className="h-3 w-3 mr-1" />
                           Surat Tugas
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => handleDownloadPDF(assignment.id, 'completion-report', e)}
                           title="Download Berita Acara"
                           data-original-text="Berita Acara"
@@ -594,9 +1039,9 @@ export default function AssignmentManagement() {
                           <FileText className="h-3 w-3 mr-1" />
                           Berita Acara
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={(e) => handleDownloadPDF(assignment.id, 'payment-receipt', e)}
                           title="Download Tagihan"
                           data-original-text="Tagihan"
@@ -618,6 +1063,226 @@ export default function AssignmentManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Payment Calculation Dialog */}
+      <Dialog open={paymentCalculationDialogOpen} onOpenChange={setPaymentCalculationDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-blue-600">
+              <Calculator className="h-5 w-5 mr-2" />
+              Payment Calculation Breakdown
+            </DialogTitle>
+            <DialogDescription>
+              Automated calculation based on service fee and number of technicians
+            </DialogDescription>
+          </DialogHeader>
+
+          {(() => {
+            const calculation = calculateAssignmentCost()
+            if (!calculation) {
+              return (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Please select a service type to calculate payment</p>
+                </div>
+              )
+            }
+
+            const selectedServiceType = serviceTypes.find(st => st.id === formData.serviceTypeId)
+            const technicianCount = 1 + formData.assistantIds.length
+
+            return (
+              <div className="space-y-6">
+                {/* Service Information */}
+                <div className="bg-blue-50 p-4 rounded-md">
+                  <h3 className="font-medium text-blue-900 mb-2">Service Details</h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">Service Type:</span>
+                      <span className="font-medium">{selectedServiceType?.name || 'Not selected'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">Base Service Fee:</span>
+                      <span className="font-medium">{formatCurrency(calculation.baseServiceFee)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Technician Information */}
+                <div className="bg-green-50 p-4 rounded-md">
+                  <h3 className="font-medium text-green-900 mb-2">Technician Deployment</h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-green-700">Lead Technician:</span>
+                      <span className="font-medium">1 × {formatCurrency(calculation.baseServiceFee)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-green-700">Assistant Technicians:</span>
+                      <span className="font-medium">{formData.assistantIds.length} × {formatCurrency(calculation.baseServiceFee)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-green-200">
+                      <span className="text-green-700 font-medium">Total Technicians:</span>
+                      <span className="font-bold text-green-900">{technicianCount}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cost Breakdown */}
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <h3 className="font-medium text-gray-900 mb-3">Cost Breakdown</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Base Service Fee:</span>
+                      <span>{formatCurrency(calculation.costBreakdown.baseServiceFee)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Technician Cost ({technicianCount} × {formatCurrency(calculation.baseServiceFee)}):</span>
+                      <span>{formatCurrency(calculation.costBreakdown.technicianCost)}</span>
+                    </div>
+                    {calculation.costBreakdown.accommodationCosts > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Accommodation Costs:</span>
+                        <span>{formatCurrency(calculation.costBreakdown.accommodationCosts)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t border-gray-300">
+                      <span className="font-medium">Total Cost:</span>
+                      <span className="font-bold text-lg text-green-600">
+                        {formatCurrency(calculation.totalCost)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Calculation Rules */}
+                <div className="bg-amber-50 p-4 rounded-md">
+                  <h3 className="font-medium text-amber-900 mb-2">Calculation Rules</h3>
+                  <ul className="text-xs text-amber-800 space-y-1">
+                    <li>• 1 technician: Base service fee × 1</li>
+                    <li>• 2 technicians: Base service fee × 2</li>
+                    <li>• 3 technicians: Base service fee × 3</li>
+                    <li>• Accommodation costs are excluded from technician multiplier</li>
+                  </ul>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-between pt-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    {formData.manualCostOverride ? (
+                      <span className="text-amber-600">
+                        <AlertCircle className="h-3 w-3 inline mr-1" />
+                        Manual override is active
+                      </span>
+                    ) : (
+                      <span className="text-green-600">
+                        <Calculator className="h-3 w-3 inline mr-1" />
+                        Auto-calculated
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-x-2">
+                    {formData.manualCostOverride && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const calc = calculateAssignmentCost()
+                          if (calc) {
+                            setFormData(prev => ({
+                              ...prev,
+                              totalCost: calc.totalCost.toString(),
+                              manualCostOverride: false
+                            }))
+                          }
+                        }}
+                      >
+                        Reset to Auto
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => setPaymentCalculationDialogOpen(false)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-600">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              Konfirmasi Hapus Tugas
+            </DialogTitle>
+            <DialogDescription>
+              ⚠️ <strong>Peringatan:</strong> Menghapus tugas ini akan menghapus semua data terkait:
+              <br />• Laporan dan foto kerja
+              <br />• Riwayat kerja teknisi
+              <br />• Data asisten dan peralatan
+              <br />• Semua relasi penugasan
+              <br /><br />
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+
+          {assignmentToDelete && (
+            <div className="py-4">
+              <div className="bg-gray-50 p-4 rounded-md space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Klien:</span>
+                  <span>{assignmentToDelete.client.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Layanan:</span>
+                  <span>{assignmentToDelete.serviceType.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Tanggal:</span>
+                  <span>{formatDate(assignmentToDelete.startDate)} - {formatDate(assignmentToDelete.endDate)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Biaya:</span>
+                  <span className="font-semibold">Rp {assignmentToDelete.totalCost.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Hapus
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

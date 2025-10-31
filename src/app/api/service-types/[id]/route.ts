@@ -33,14 +33,15 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { name, category, description } = body
+    const { name, category, description, price } = body
 
     const serviceType = await db.serviceType.update({
       where: { id: params.id },
       data: {
         name,
         category,
-        description
+        description,
+        price: price !== undefined ? (price ? parseFloat(price) : null) : undefined
       }
     })
 

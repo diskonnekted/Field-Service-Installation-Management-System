@@ -3,11 +3,12 @@ import { db } from '@/lib/db'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const assignment = await db.assignment.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         client: true,
         serviceType: true,
@@ -44,9 +45,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const {
       clientId,
@@ -59,22 +61,25 @@ export async function PUT(
       documentation,
       totalCost,
       manualCostOverride,
+      workLocation,
+      latitude,
+      longitude,
       assistantIds,
       equipment
     } = body
 
     // First, delete existing assistants and equipment
     await db.assignmentAssistant.deleteMany({
-      where: { assignmentId: params.id }
+      where: { assignmentId: id }
     })
-    
+
     await db.assignmentEquipment.deleteMany({
-      where: { assignmentId: params.id }
+      where: { assignmentId: id }
     })
 
     // Update the assignment
     const assignment = await db.assignment.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         clientId,
         serviceTypeId,
@@ -86,6 +91,9 @@ export async function PUT(
         documentation: documentation ? JSON.stringify(documentation) : null,
         totalCost: parseFloat(totalCost) || 0,
         manualCostOverride: Boolean(manualCostOverride),
+        workLocation: workLocation || null,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
         assistants: assistantIds ? {
           create: assistantIds.map((technicianId: string) => ({
             technicianId
@@ -127,24 +135,21 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Delete related records first
-    await db.assignmentAssistant.deleteMany({
-      where: { assignmentId: params.id }
-    })
-    
-    await db.assignmentEquipment.deleteMany({
-      where: { assignmentId: params.id }
-    })
+    const { id } = await params
 
-    // Delete the assignment
+    // With cascade delete in the schema, we can simply delete the assignment
+    // and all related records (reports, assistants, equipment, work histories) will be automatically deleted
     await db.assignment.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      message: 'Assignment and all related data (reports, photos, assistants, equipment, work histories) have been deleted successfully'
+    })
   } catch (error) {
     console.error('Error deleting assignment:', error)
     return NextResponse.json(

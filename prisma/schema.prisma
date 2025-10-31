@@ -9,11 +9,38 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-// Admin user for system management
+// User system with role-based access control
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          UserRole @default(TECHNICIAN)
+  technicianId  String?  @unique // Link to technician profile if role is TECHNICIAN
+  phone         String?
+  avatar        String? // URL to profile image
+  lastLoginAt   DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  technician    Technician? @relation("TechnicianUser", fields: [technicianId], references: [id])
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  FINANCE
+  TECHNICIAN
+}
+
+// Admin user for system management (deprecated, use User model instead)
 model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -31,13 +58,21 @@ model Technician {
   address   String
   type      TechnicianType @default(FREELANCE)
   expertise String?
+  experienceYears Int? @default(0)
+  skills    String? // JSON array of skills
+  bio       String? // Professional biography
+  avatar    String? // Profile photo URL
+  rating    Float? @default(0) // Average rating from completed jobs
+  totalJobs Int? @default(0) // Total completed assignments
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  leadAssignments Assignment[] @relation("LeadTechnician")
+  user                User? @relation("TechnicianUser")
+  leadAssignments     Assignment[] @relation("LeadTechnician")
   assistantAssignments AssignmentAssistant[]
   serviceCostTemplates ServiceCostTemplate[]
+  workHistory         TechnicianWorkHistory[]
 
   @@map("technicians")
 }
@@ -59,6 +94,7 @@ model Client {
 
   // Relations
   assignments Assignment[]
+  workHistories TechnicianWorkHistory[]
 
   @@map("clients")
 }
@@ -69,12 +105,14 @@ model ServiceType {
   name        String
   category    String
   description String?
+  price       Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
   assignments Assignment[]
   serviceCostTemplates ServiceCostTemplate[]
+  workHistories TechnicianWorkHistory[]
 
   @@map("service_types")
 }
@@ -127,6 +165,9 @@ model Assignment {
   documentation     String? // JSON array of file paths
   totalCost         Float          @default(0)
   manualCostOverride Boolean        @default(false)
+  workLocation      String?        // Alamat lengkap lokasi pekerjaan
+  latitude          Float?         // Koordinat latitude lokasi pekerjaan
+  longitude         Float?         // Koordinat longitude lokasi pekerjaan
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
@@ -136,6 +177,8 @@ model Assignment {
   leadTechnician  Technician      @relation("LeadTechnician", fields: [leadTechnicianId], references: [id])
   assistants      AssignmentAssistant[]
   equipment       AssignmentEquipment[]
+  reports         Report[]
+  workHistories   TechnicianWorkHistory[]
 
   @@map("assignments")
 }
@@ -155,7 +198,7 @@ model AssignmentAssistant {
 
   // Relations
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  technician Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  technician Technician @relation(fields: [technicianId], references: [id])
 
   @@unique([assignmentId, technicianId])
   @@map("assignment_assistants")
@@ -170,8 +213,72 @@ model AssignmentEquipment {
 
   // Relations
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  equipment  ServiceEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  equipment  ServiceEquipment @relation(fields: [equipmentId], references: [id])
 
   @@unique([assignmentId, equipmentId])
   @@map("assignment_equipment")
+}
+
+// Work Reports
+model Report {
+  id                   String         @id @default(cuid())
+  assignmentId         String
+  reportDate           DateTime
+  workStartTime        String?
+  workEndTime          String?
+  weatherCondition     String?
+  locationDescription  String?
+  workSummary          String?
+  findings             String?
+  recommendations      String?
+  nextSteps            String?
+  photos               String? // JSON array of photo objects
+  status               ReportStatus   @default(IN_PROGRESS)
+  customerSignature    String?
+  technicianSignature  String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  // Relations
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+enum ReportStatus {
+  IN_PROGRESS
+  COMPLETED
+  NEEDS_FOLLOWUP
+}
+
+// Technician Work History
+model TechnicianWorkHistory {
+  id               String   @id @default(cuid())
+  technicianId     String
+  clientId         String
+  serviceTypeId    String
+  assignmentId     String
+  startDate        DateTime
+  endDate          DateTime
+  jobDescription   String
+  performanceRating Float? @default(0) // 1-5 rating
+  clientFeedback   String?
+  totalEarnings    Float?  // Total amount earned for this job
+  status           WorkStatus @default(COMPLETED)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  technician  Technician  @relation(fields: [technicianId], references: [id])
+  client      Client      @relation(fields: [clientId], references: [id])
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+  assignment  Assignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@map("technician_work_history")
+}
+
+enum WorkStatus {
+  COMPLETED
+  IN_PROGRESS
+  CANCELLED
 }

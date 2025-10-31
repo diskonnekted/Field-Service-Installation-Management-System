@@ -17,6 +17,7 @@ interface ServiceType {
   name: string
   category: string
   description?: string
+  price?: number
   createdAt: string
   updatedAt: string
 }
@@ -41,7 +42,8 @@ export default function ServiceManagement() {
   const [serviceFormData, setServiceFormData] = useState({
     name: '',
     category: '',
-    description: ''
+    description: '',
+    price: ''
   })
 
   // Equipment State
@@ -83,13 +85,19 @@ export default function ServiceManagement() {
     try {
       const url = editingServiceType ? `/api/service-types/${editingServiceType.id}` : '/api/service-types'
       const method = editingServiceType ? 'PUT' : 'POST'
-      
+
+      // Convert price to number if provided
+      const submitData = {
+        ...serviceFormData,
+        price: serviceFormData.price ? parseFloat(serviceFormData.price) : undefined
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(serviceFormData),
+        body: JSON.stringify(submitData),
       })
 
       if (response.ok) {
@@ -107,7 +115,8 @@ export default function ServiceManagement() {
     setServiceFormData({
       name: serviceType.name,
       category: serviceType.category,
-      description: serviceType.description || ''
+      description: serviceType.description || '',
+      price: serviceType.price?.toString() || ''
     })
     setIsServiceDialogOpen(true)
   }
@@ -131,7 +140,8 @@ export default function ServiceManagement() {
     setServiceFormData({
       name: '',
       category: '',
-      description: ''
+      description: '',
+      price: ''
     })
     setEditingServiceType(null)
   }
@@ -291,6 +301,18 @@ export default function ServiceManagement() {
                       placeholder="Detailed description of the service"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price (IDR)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={serviceFormData.price}
+                      onChange={(e) => setServiceFormData({ ...serviceFormData, price: e.target.value })}
+                      placeholder="e.g., 1500000"
+                    />
+                  </div>
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setIsServiceDialogOpen(false)}>
                       Cancel
@@ -338,6 +360,7 @@ export default function ServiceManagement() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
+                    <TableHead>Price</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -350,6 +373,11 @@ export default function ServiceManagement() {
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
                           {serviceType.category}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-green-600">
+                          {serviceType.price ? `Rp ${serviceType.price.toLocaleString('id-ID')}` : '-'}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground max-w-xs truncate">

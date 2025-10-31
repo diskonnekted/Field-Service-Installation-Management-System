@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf'
+import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
 
 export interface AssignmentData {
@@ -17,6 +17,10 @@ export interface AssignmentData {
 
 export interface CostBreakdown {
   technicianFee: number
+  leadTechnicianBaseFee: number
+  leadTechnicianBonus: number
+  leadTechnicianBonusPercentage: number
+  assistantTechnicianFee: number
   transportCost: number
   accommodation: number
   incidentalEquipmentCost: number
@@ -102,20 +106,60 @@ class PDFService {
     return currentY + 5
   }
 
+  private addSignatureSectionForCompany(yPosition: number, title: string): number {
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text(title, this.margin, yPosition)
+
+    // Signature lines for company representative
+    const signatureY = yPosition + 25
+    this.doc.setFont('helvetica', 'normal')
+    this.doc.text('_________________________', this.margin, signatureY)
+    this.doc.text('Nama Jelas & Jabatan', this.margin, signatureY + 5)
+
+    this.doc.text('_________________________', this.pageWidth - this.margin - 60, signatureY)
+    this.doc.text('Tanggal', this.pageWidth - this.margin - 60, signatureY + 5)
+
+    return signatureY + 20
+  }
+
+  private addSignatureSectionForTechnician(yPosition: number, title: string, technicianName: string): number {
+    this.doc.setFontSize(10)
+    this.doc.setFont('helvetica', 'bold')
+    this.doc.text(title, this.margin, yPosition)
+
+    // Signature lines for technician
+    const signatureY = yPosition + 25
+    this.doc.setFont('helvetica', 'normal')
+
+    // Technician name and signature
+    this.doc.setFontSize(9)
+    this.doc.text(`(${technicianName})`, this.margin, signatureY + 15)
+
+    this.doc.setFontSize(10)
+    this.doc.text('_________________________', this.margin, signatureY)
+    this.doc.text('Tanda Tangan', this.margin, signatureY + 5)
+
+    this.doc.text('_________________________', this.pageWidth - this.margin - 60, signatureY)
+    this.doc.text('Tanggal', this.pageWidth - this.margin - 60, signatureY + 5)
+
+    return signatureY + 20
+  }
+
   private addSignatureSection(yPosition: number, title: string): number {
     this.doc.setFontSize(10)
     this.doc.setFont('helvetica', 'bold')
     this.doc.text(title, this.margin, yPosition)
-    
+
     // Signature lines
     const signatureY = yPosition + 30
     this.doc.setFont('helvetica', 'normal')
     this.doc.text('_________________________', this.margin, signatureY)
     this.doc.text('Tanda Tangan', this.margin, signatureY + 5)
-    
+
     this.doc.text('_________________________', this.pageWidth - this.margin - 60, signatureY)
     this.doc.text('Tanggal', this.pageWidth - this.margin - 60, signatureY + 5)
-    
+
     return signatureY + 20
   }
 
@@ -365,28 +409,44 @@ class PDFService {
 
   async generatePaymentReceipt(assignment: AssignmentData, costBreakdown: CostBreakdown): Promise<void> {
     this.addHeader('TAGIHAN PEMBAYARAN TEKNISI')
-    
+
     let yPosition = 80
-    
+
     // Receipt Details
     yPosition = this.addSection('Detail Tagihan', yPosition)
     yPosition = this.addText('Nomor Tagihan', assignment.id, yPosition)
     yPosition = this.addText('Nomor Penugasan', assignment.id, yPosition)
     yPosition = this.addText('Tanggal Tagihan', new Date().toLocaleDateString('id-ID'), yPosition)
-    
+
     // Company Information (Pihak yang membayar)
     yPosition += 10
     yPosition = this.addSection('Diterbitkan Oleh', yPosition)
     yPosition = this.addText('Perusahaan', 'Clasnet Group', yPosition)
     yPosition = this.addText('Alamat', 'Jl. Serulingmas No. 32, Banjarnegara, Indonesia', yPosition)
     yPosition = this.addText('Telepon', '+62 286 123456', yPosition)
-    
+
     // Technician Information (Pihak yang menerima pembayaran)
     yPosition += 10
     yPosition = this.addSection('Dibayarkan Kepada', yPosition)
-    yPosition = this.addText('Nama Teknisi', assignment.leadTechnician.name, yPosition)
-    yPosition = this.addText('Telepon', assignment.leadTechnician.phone, yPosition)
-    yPosition = this.addText('Alamat', assignment.leadTechnician.address, yPosition)
+    yPosition = this.addText('Teknisi Utama (PIC)', assignment.leadTechnician.name, yPosition)
+    yPosition = this.addText('Telepon PIC', assignment.leadTechnician.phone, yPosition)
+    yPosition = this.addText('Alamat PIC', assignment.leadTechnician.address, yPosition)
+
+    // Assistant Technicians
+    if (assignment.assistants.length > 0) {
+      yPosition += 8
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFontSize(10)
+      this.doc.text('Teknisi Pembantu:', this.margin, yPosition)
+      yPosition += 6
+
+      assignment.assistants.forEach((assistant, index) => {
+        this.doc.setFont('helvetica', 'normal')
+        this.doc.setFontSize(9)
+        this.doc.text(`${index + 1}. ${assistant.technician.name} - ${assistant.technician.phone}`, this.margin + 5, yPosition)
+        yPosition += 5
+      })
+    }
     
     // Assignment Information
     yPosition += 10
@@ -401,12 +461,22 @@ class PDFService {
     
     const headers = ['Deskripsi', 'Jumlah (IDR)']
     const data = [
-      ['Fee Teknisi', this.formatRupiah(costBreakdown.technicianFee)],
+      ['Lead Technician (Fee Utama)', this.formatRupiah(costBreakdown.leadTechnicianBaseFee)],
+      [`Lead Technician Bonus (${Math.round(costBreakdown.leadTechnicianBonusPercentage * 100)}%)`, this.formatRupiah(costBreakdown.leadTechnicianBonus)],
+    ]
+
+    // Add assistant technician fee if applicable
+    if (costBreakdown.assistantTechnicianFee > 0) {
+      data.push(['Assistant Technician(s)', this.formatRupiah(costBreakdown.assistantTechnicianFee)])
+    }
+
+    // Add other costs
+    data.push(
       ['Biaya Transport', this.formatRupiah(costBreakdown.transportCost)],
       ['Akomodasi', this.formatRupiah(costBreakdown.accommodation)],
       ['Biaya Peralatan Insidental', this.formatRupiah(costBreakdown.incidentalEquipmentCost)],
       ['TOTAL TAGIHAN', this.formatRupiah(costBreakdown.total)]
-    ]
+    )
     yPosition = this.addTable(headers, data, yPosition)
     
     // Payment Confirmation
@@ -423,39 +493,67 @@ class PDFService {
       yPosition = this.addText('', assignment.notes, yPosition)
     }
     
-    // Signatures
-    yPosition += 20
-    yPosition = this.addSignatureSection(yPosition, 'Dibayar Oleh (Wakil Perusahaan)')
-    yPosition = this.addSignatureSection(yPosition + 40, 'Diterima Oleh (Teknisi)')
-    
+    // Money Acknowledgment Section for All Technicians
+    yPosition += 30
+    yPosition = this.addSection('Tanda Terima Uang', yPosition)
+
+    // Company Representative
+    yPosition = this.addSignatureSectionForCompany(yPosition, 'Dibayar Oleh (Wakil Perusahaan)')
+
+    // Lead Technician
+    yPosition = this.addSignatureSectionForTechnician(yPosition, 'Tanda Terima (Teknisi Utama)', assignment.leadTechnician.name)
+
+    // Assistant Technicians
+    if (assignment.assistants.length > 0) {
+      assignment.assistants.forEach((assistant) => {
+        yPosition = this.addSignatureSectionForTechnician(yPosition, 'Tanda Terima (Teknisi Pembantu)', assistant.technician.name)
+      })
+    }
+
     // Save the PDF
     this.doc.save(`tagihan-${assignment.id}.pdf`)
   }
 
   async generatePaymentReceiptBuffer(assignment: AssignmentData, costBreakdown: CostBreakdown): Promise<Uint8Array> {
     this.addHeader('TAGIHAN PEMBAYARAN TEKNISI')
-    
+
     let yPosition = 80
-    
+
     // Receipt Details
     yPosition = this.addSection('Detail Tagihan', yPosition)
     yPosition = this.addText('Nomor Tagihan', assignment.id, yPosition)
     yPosition = this.addText('Nomor Penugasan', assignment.id, yPosition)
     yPosition = this.addText('Tanggal Tagihan', new Date().toLocaleDateString('id-ID'), yPosition)
-    
+
     // Company Information (Pihak yang membayar)
     yPosition += 10
     yPosition = this.addSection('Diterbitkan Oleh', yPosition)
     yPosition = this.addText('Perusahaan', 'Clasnet Group', yPosition)
     yPosition = this.addText('Alamat', 'Jl. Serulingmas No. 32, Banjarnegara, Indonesia', yPosition)
     yPosition = this.addText('Telepon', '+62 286 123456', yPosition)
-    
+
     // Technician Information (Pihak yang menerima pembayaran)
     yPosition += 10
     yPosition = this.addSection('Dibayarkan Kepada', yPosition)
-    yPosition = this.addText('Nama Teknisi', assignment.leadTechnician.name, yPosition)
-    yPosition = this.addText('Telepon', assignment.leadTechnician.phone, yPosition)
-    yPosition = this.addText('Alamat', assignment.leadTechnician.address, yPosition)
+    yPosition = this.addText('Teknisi Utama (PIC)', assignment.leadTechnician.name, yPosition)
+    yPosition = this.addText('Telepon PIC', assignment.leadTechnician.phone, yPosition)
+    yPosition = this.addText('Alamat PIC', assignment.leadTechnician.address, yPosition)
+
+    // Assistant Technicians
+    if (assignment.assistants.length > 0) {
+      yPosition += 8
+      this.doc.setFont('helvetica', 'bold')
+      this.doc.setFontSize(10)
+      this.doc.text('Teknisi Pembantu:', this.margin, yPosition)
+      yPosition += 6
+
+      assignment.assistants.forEach((assistant, index) => {
+        this.doc.setFont('helvetica', 'normal')
+        this.doc.setFontSize(9)
+        this.doc.text(`${index + 1}. ${assistant.technician.name} - ${assistant.technician.phone}`, this.margin + 5, yPosition)
+        yPosition += 5
+      })
+    }
     
     // Assignment Information
     yPosition += 10
@@ -470,12 +568,22 @@ class PDFService {
     
     const headers = ['Deskripsi', 'Jumlah (IDR)']
     const data = [
-      ['Fee Teknisi', this.formatRupiah(costBreakdown.technicianFee)],
+      ['Lead Technician (Fee Utama)', this.formatRupiah(costBreakdown.leadTechnicianBaseFee)],
+      [`Lead Technician Bonus (${Math.round(costBreakdown.leadTechnicianBonusPercentage * 100)}%)`, this.formatRupiah(costBreakdown.leadTechnicianBonus)],
+    ]
+
+    // Add assistant technician fee if applicable
+    if (costBreakdown.assistantTechnicianFee > 0) {
+      data.push(['Assistant Technician(s)', this.formatRupiah(costBreakdown.assistantTechnicianFee)])
+    }
+
+    // Add other costs
+    data.push(
       ['Biaya Transport', this.formatRupiah(costBreakdown.transportCost)],
       ['Akomodasi', this.formatRupiah(costBreakdown.accommodation)],
       ['Biaya Peralatan Insidental', this.formatRupiah(costBreakdown.incidentalEquipmentCost)],
       ['TOTAL TAGIHAN', this.formatRupiah(costBreakdown.total)]
-    ]
+    )
     yPosition = this.addTable(headers, data, yPosition)
     
     // Payment Confirmation
@@ -492,11 +600,23 @@ class PDFService {
       yPosition = this.addText('', assignment.notes, yPosition)
     }
     
-    // Signatures
-    yPosition += 20
-    yPosition = this.addSignatureSection(yPosition, 'Dibayar Oleh (Wakil Perusahaan)')
-    yPosition = this.addSignatureSection(yPosition + 40, 'Diterima Oleh (Teknisi)')
-    
+    // Money Acknowledgment Section for All Technicians
+    yPosition += 30
+    yPosition = this.addSection('Tanda Terima Uang', yPosition)
+
+    // Company Representative
+    yPosition = this.addSignatureSectionForCompany(yPosition, 'Dibayar Oleh (Wakil Perusahaan)')
+
+    // Lead Technician
+    yPosition = this.addSignatureSectionForTechnician(yPosition, 'Tanda Terima (Teknisi Utama)', assignment.leadTechnician.name)
+
+    // Assistant Technicians
+    if (assignment.assistants.length > 0) {
+      assignment.assistants.forEach((assistant) => {
+        yPosition = this.addSignatureSectionForTechnician(yPosition, 'Tanda Terima (Teknisi Pembantu)', assistant.technician.name)
+      })
+    }
+
     // Return PDF as buffer
     return this.doc.output('arraybuffer')
   }

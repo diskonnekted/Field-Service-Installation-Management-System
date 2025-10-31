@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
       documentation,
       totalCost,
       manualCostOverride,
+      workLocation,
+      latitude,
+      longitude,
       assistantIds,
       equipment
     } = body
@@ -85,6 +88,9 @@ export async function POST(request: NextRequest) {
         documentation: documentation ? JSON.stringify(documentation) : null,
         totalCost: parseFloat(totalCost) || 0,
         manualCostOverride: Boolean(manualCostOverride),
+        workLocation: workLocation || null,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
         assistants: assistantIds ? {
           create: assistantIds.map((technicianId: string) => ({
             technicianId
